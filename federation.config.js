@@ -1,7 +1,7 @@
 const { withNativeFederation, shareAll } = require('@angular-architects/native-federation/config');
 
 module.exports = withNativeFederation({
-  name: 'Catalog',
+  name: 'catalog',
   exposes: {
     './routes': './src/app/catalog/catalog.routes.ts',
   },
