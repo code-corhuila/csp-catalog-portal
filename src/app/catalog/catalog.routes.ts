@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
-import { BillboardPageComponent } from './pages/billboard-page.component';
-
 export const CATALOG_ROUTES: Routes = [
-  { path: '', component: BillboardPageComponent }
+  {
+    path: '',
+    loadComponent: () => import('./pages/billboard-page.component').then(m => m.BillboardPageComponent),
+  },
 ];

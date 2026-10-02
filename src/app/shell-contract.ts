@@ -1,6 +1,6 @@
 /**
  * What the shell guarantees to every portal. Inside the shell, a failed request
- * reaches the portal as this object ? never as a raw HttpErrorResponse ? and
+ * reaches the portal as this object, never as a raw HttpErrorResponse, and
  * userMessage is already decided. Keep in step with csp-front/src/app/core/http/api-error.ts.
  */
 export interface FieldError {
