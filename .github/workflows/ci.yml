@@ -27,3 +27,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: npm run lint --if-present
+      - run: npm test -- --browsers=ChromeHeadless
+      - run: docker build --file deploy/Dockerfile --tag csp-catalog-portal:ci .

@@ -1,7 +1,7 @@
-name: abbr-orders-portal
+name: csp-catalog-portal
 
 services:
-  orders-portal:
+  catalog-portal:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
