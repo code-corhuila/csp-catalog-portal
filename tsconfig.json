@@ -18,7 +18,7 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@csp-booking-portal/*": ["src/app/*"]
+      "@csp-catalog-portal/*": ["src/app/*"]
     }
   },
   "angularCompilerOptions": {
