@@ -40,3 +40,11 @@ docker build -f deploy/Dockerfile -t csp-catalog-portal .
 
 `deploy/compose.yml` joins the `platform` network and exposes port 8080 without publishing it. Copy `.env.example` to `.env` for
 local values and never commit it.
+
+## HU-FE-CATALOG-001 synthetic data
+
+The Catalog portal currently exercises the billboard and seat-map flow with a typed local dataset
+under `src/app/catalog/data/`. `SyntheticCatalogDataService` is the ADR-022 data boundary for
+this Cut 2 slice: it does not use `HttpClient` or a backend and filters `DRAFT` movies before
+the billboard renders. The dataset includes `The Silent Reel`, one showtime, Room 1, and seats
+`A1` through `B3`; the first seat is unavailable in the deterministic seat-map example.
