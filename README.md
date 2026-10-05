@@ -23,3 +23,20 @@ branch into another: `merge develop -> qa` and `merge qa -> main` do not exist i
 rule.
 
 Full policy: `00-governance/branching-policy.md` in `csp-docs`.
+
+## Build, test and run
+
+Angular 21 portal with Native Federation, on Node 22 (ADR-022 in `csp-docs`). It has no HTTP client of its own: the shell
+(`csp-front`) provides it, so the portal is exercised by loading it from the shell.
+
+```bash
+npm ci
+npm run build
+npm run lint
+npm test -- --browsers=ChromeHeadless
+npm start                                  # dev server on port 4202
+docker build -f deploy/Dockerfile -t csp-catalog-portal .
+```
+
+`deploy/compose.yml` joins the `platform` network and exposes port 8080 without publishing it. Copy `.env.example` to `.env` for
+local values and never commit it.

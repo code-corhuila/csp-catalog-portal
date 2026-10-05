@@ -7,13 +7,9 @@ module.exports = withNativeFederation({
   },
   shared: {
     ...shareAll({ singleton: true, strictVersion: true, requiredVersion: 'auto' }),
-    '@angular/core': { singleton: true, strictVersion: true, requiredVersion: 'auto' },
-    '@angular/common': { singleton: true, strictVersion: true, requiredVersion: 'auto' },
-    '@angular/platform-browser': { singleton: true, strictVersion: true, requiredVersion: 'auto' },
-    '@angular/router': { singleton: true, strictVersion: true, requiredVersion: 'auto' },
-    '@angular/forms': { singleton: true, strictVersion: true, requiredVersion: 'auto' },
-    'rxjs': { singleton: true, strictVersion: true, requiredVersion: 'auto' },
   },
+  // Entry points the application never loads: sharing them would bundle their
+  // dependencies (@angular/animations is not even installed).
   skip: [
     'rxjs/ajax', 'rxjs/fetch', 'rxjs/testing', 'rxjs/webSocket',
     '@angular/platform-browser/animations', '@angular/platform-browser/animations/async',
