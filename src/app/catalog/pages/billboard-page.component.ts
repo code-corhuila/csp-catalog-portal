@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { asApiError, ApiError } from '../../shell-contract';
 import { CatalogApiService } from '../data/catalog-api.service';
 import { BillboardItem } from '../model/billboard';
@@ -10,7 +11,10 @@ import { BillboardItem } from '../model/billboard';
     <h2>Cartelera</h2>
     @switch (view().kind) {
       @case ('loading') { <p>Loading billboard...</p> }
-      @case ('error') { <p role="alert">{{ errorMessage() }}</p> }
+      @case ('error') {
+        <p role="alert">{{ errorMessage() }}</p>
+        <button type="button" (click)="load()">Retry</button>
+      }
       @case ('empty') { <p>No movies are currently published.</p> }
       @case ('ready') {
         <ul>
@@ -22,10 +26,11 @@ import { BillboardItem } from '../model/billboard';
     }
   `,
 })
-export class BillboardPageComponent implements OnInit {
+export class BillboardPageComponent implements OnInit, OnDestroy {
   readonly view = signal<View>({ kind: 'loading' });
 
   private readonly catalogApi = inject(CatalogApiService);
+  private request?: Subscription;
 
   errorMessage(): string {
     const current = this.view();
@@ -38,7 +43,18 @@ export class BillboardPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.catalogApi.getBillboard().subscribe({
+    this.load();
+  }
+
+  ngOnDestroy(): void {
+    this.request?.unsubscribe();
+  }
+
+  /** A newer request replaces the previous one, so a slow answer never overwrites a fresh one. */
+  load(): void {
+    this.request?.unsubscribe();
+    this.view.set({ kind: 'loading' });
+    this.request = this.catalogApi.getBillboard().subscribe({
       next: page => this.view.set(page.data.length
         ? { kind: 'ready', items: page.data }
         : { kind: 'empty' }),
