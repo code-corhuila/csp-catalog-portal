@@ -1,28 +1,27 @@
 import { ActivatedRoute } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { SeatMapPageComponent } from './seat-map-page.component';
+import { SYNTHETIC_CATALOG } from '../data/synthetic-catalog';
 
 describe('SeatMapPageComponent', () => {
-  it('renders every synthetic seat label', () => {
+  it('renders every seat label from the selected room', () => {
     const fixture = TestBed.configureTestingModule({
       imports: [SeatMapPageComponent],
       providers: [
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: { get: () => '44444444-4444-4444-4444-444444444444' } } },
+          useValue: { snapshot: { paramMap: { get: () => SYNTHETIC_CATALOG.showtimes[0].id } } },
         },
       ],
     }).createComponent(SeatMapPageComponent);
 
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('A1');
-    expect(fixture.nativeElement.textContent).toContain('A2');
-    expect(fixture.nativeElement.textContent).toContain('A3');
-    expect(fixture.nativeElement.textContent).toContain('B1');
-    expect(fixture.nativeElement.textContent).toContain('B2');
-    expect(fixture.nativeElement.textContent).toContain('B3');
+    const content = fixture.nativeElement.textContent;
+    SYNTHETIC_CATALOG.rooms[0].seatLabels.forEach(label => {
+      expect(content).toContain(label);
+    });
 
-    const firstSeat = fixture.nativeElement.querySelector('button[aria-label="A1 unavailable"]');
+    const firstSeat = fixture.nativeElement.querySelector('button[aria-label="Asiento A1 ocupado"]');
     expect(firstSeat).not.toBeNull();
     expect(firstSeat.disabled).toBeTrue();
   });

@@ -22,7 +22,7 @@ describe('MovieDetailPageComponent', () => {
 
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Movie not found.');
+    expect(fixture.nativeElement.textContent).toContain('Película no encontrada.');
     expect(fixture.nativeElement.textContent).not.toContain('Neon Sky');
   });
 });

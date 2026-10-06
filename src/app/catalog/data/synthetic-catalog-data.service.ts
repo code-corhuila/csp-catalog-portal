@@ -9,9 +9,15 @@ export interface SeatAvailability {
   available: boolean;
 }
 
+export type MovieExtended = Movie & {
+  trailerUrl?: string;
+  description?: string;
+  imageUrl?: string;
+};
+
 @Injectable({ providedIn: 'root' })
 export class SyntheticCatalogDataService {
-  getPublishedMovies(): Movie[] {
+  getPublishedMovies(): MovieExtended[] {
     return SYNTHETIC_CATALOG.movies
       .filter(movie => movie.publicationStatus === 'PUBLISHED')
       .map(movie => ({
@@ -20,6 +26,9 @@ export class SyntheticCatalogDataService {
         durationMinutes: movie.duration,
         genres: movie.genres,
         status: movie.publicationStatus,
+        trailerUrl: movie.trailerUrl,
+        description: movie.description,
+        imageUrl: movie.imageUrl,
       }));
   }
 
@@ -27,7 +36,7 @@ export class SyntheticCatalogDataService {
     return SYNTHETIC_CATALOG.showtimes.filter(showtime => !movieId || showtime.movieId === movieId);
   }
 
-  getMovie(movieId: string): Movie | undefined {
+  getMovie(movieId: string): MovieExtended | undefined {
     return this.getPublishedMovies().find(movie => movie.id === movieId);
   }
 

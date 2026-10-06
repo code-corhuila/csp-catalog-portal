@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { SyntheticCatalogDataService } from './synthetic-catalog-data.service';
+import { SYNTHETIC_CATALOG } from './synthetic-catalog';
 
 describe('SyntheticCatalogDataService', () => {
   let service: SyntheticCatalogDataService;
@@ -11,17 +12,27 @@ describe('SyntheticCatalogDataService', () => {
   });
 
   it('filters draft movies from the billboard', () => {
-    expect(service.getPublishedMovies().map(movie => movie.title)).toEqual(['The Silent Reel']);
+    const publishedMovies = service.getPublishedMovies();
+    const publishedTitles = new Set(publishedMovies.map(movie => movie.title));
+
+    expect(publishedMovies.length).toBe(
+      SYNTHETIC_CATALOG.movies.filter(movie => movie.publicationStatus === 'PUBLISHED').length,
+    );
+    expect(publishedMovies.every(movie => movie.status === 'PUBLISHED')).toBeTrue();
+    expect(
+      SYNTHETIC_CATALOG.movies
+        .filter(movie => movie.publicationStatus === 'DRAFT')
+        .every(movie => !publishedTitles.has(movie.title)),
+    ).toBeTrue();
   });
 
-  it('returns the exact synthetic seat labels with availability', () => {
-    expect(service.getSeats('44444444-4444-4444-4444-444444444444')).toEqual([
-      { label: 'A1', available: false },
-      { label: 'A2', available: true },
-      { label: 'A3', available: true },
-      { label: 'B1', available: true },
-      { label: 'B2', available: true },
-      { label: 'B3', available: true },
-    ]);
+  it('returns every seat from the room with deterministic availability', () => {
+    const seats = service.getSeats(SYNTHETIC_CATALOG.showtimes[0].id);
+    const expectedLabels = SYNTHETIC_CATALOG.rooms[0].seatLabels;
+
+    expect(seats.map(seat => seat.label)).toEqual(expectedLabels);
+    expect(seats.length).toBe(expectedLabels.length);
+    expect(seats[0].available).toBeFalse();
+    expect(seats.slice(1).every(seat => seat.available)).toBeTrue();
   });
 });
