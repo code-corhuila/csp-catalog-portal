@@ -29,7 +29,7 @@
             "assets": [
               { "glob": "**/*", "input": "public", "output": "/" }
             ],
-            "styles": [],
+            "styles": ["src/styles.css"],
             "scripts": []
           },
           "configurations": {
@@ -66,7 +66,7 @@
             "polyfills": ["es-module-shims"],
             "tsConfig": "tsconfig.spec.json",
             "assets": ["src/favicon.ico", "src/assets"],
-            "styles": [],
+            "styles": ["src/styles.css"],
             "scripts": []
           }
         }
