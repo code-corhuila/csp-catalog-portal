@@ -7,6 +7,7 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
   selector: 'app-movie-detail-page',
   standalone: true,
   imports: [DatePipe, RouterLink],
+  styles: [':host { display: block; min-width: 320px; }'],
   template: `
     @if (movie; as currentMovie) {
       <main>

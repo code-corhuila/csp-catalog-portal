@@ -8,13 +8,3 @@ export interface Showtime {
   subtitleLanguage?: string;
   status: 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';
 }
-
-export interface AvailabilityResponse {
-  showtimeId: string;
-  movieTitle: string;
-  roomName: string;
-  startsAt: string;
-  endsAt: string;
-  price: number;
-  seats: string[];
-}

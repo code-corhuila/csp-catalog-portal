@@ -7,6 +7,7 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
   selector: 'app-catalog-billboard-page',
   standalone: true,
   imports: [RouterLink],
+  styles: [':host { display: block; min-width: 320px; }'],
   template: `
     <main>
       <h2>Cartelera</h2>

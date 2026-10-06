@@ -47,4 +47,6 @@ The Catalog portal currently exercises the billboard and seat-map flow with a ty
 under `src/app/catalog/data/`. `SyntheticCatalogDataService` is the ADR-022 data boundary for
 this Cut 2 slice: it does not use `HttpClient` or a backend and filters `DRAFT` movies before
 the billboard renders. The dataset includes `The Silent Reel`, one showtime, Room 1, and seats
-`A1` through `B3`; the first seat is unavailable in the deterministic seat-map example.
+`A1` through `B3`. Seat availability is deterministic demo data: `A1` is unavailable for the
+synthetic showtime so the UI can render both states. It is not a reservation model and must be
+replaced by the Catalog availability response when the backend integration is introduced.

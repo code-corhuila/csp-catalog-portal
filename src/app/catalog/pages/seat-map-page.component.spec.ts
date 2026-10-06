@@ -21,5 +21,9 @@ describe('SeatMapPageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('B1');
     expect(fixture.nativeElement.textContent).toContain('B2');
     expect(fixture.nativeElement.textContent).toContain('B3');
+
+    const firstSeat = fixture.nativeElement.querySelector('button[aria-label="A1 unavailable"]');
+    expect(firstSeat).not.toBeNull();
+    expect(firstSeat.disabled).toBeTrue();
   });
 });

@@ -6,6 +6,7 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
   selector: 'app-seat-map-page',
   standalone: true,
   imports: [RouterLink],
+  styles: [':host { display: block; min-width: 320px; }'],
   template: `
     <main>
       <a routerLink="/">Back to billboard</a>
