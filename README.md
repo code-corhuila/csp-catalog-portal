@@ -34,7 +34,7 @@ npm ci
 npm run build
 npm run lint
 npm test -- --browsers=ChromeHeadless
-npm start                                  # dev server on port 4202
+npm start                                  # dev server on port 4203
 docker build -f deploy/Dockerfile -t csp-catalog-portal .
 ```
 
