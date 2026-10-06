@@ -50,3 +50,5 @@ the billboard renders. The dataset includes `The Silent Reel`, one showtime, Roo
 `A1` through `B3`. Seat availability is deterministic demo data: `A1` is unavailable for the
 synthetic showtime so the UI can render both states. It is not a reservation model and must be
 replaced by the Catalog availability response when the backend integration is introduced.
+Showtimes and seats linked to `DRAFT` movies are excluded by the same service boundary, including
+when a user navigates directly to a showtime URL.

@@ -33,7 +33,9 @@ export class SyntheticCatalogDataService {
   }
 
   getShowtimes(movieId?: string): Showtime[] {
-    return SYNTHETIC_CATALOG.showtimes.filter(showtime => !movieId || showtime.movieId === movieId);
+    return SYNTHETIC_CATALOG.showtimes.filter(showtime =>
+      (!movieId || showtime.movieId === movieId) && this.isPublishedMovie(showtime.movieId),
+    );
   }
 
   getMovie(movieId: string): MovieExtended | undefined {
@@ -49,7 +51,17 @@ export class SyntheticCatalogDataService {
 
   getSeats(showtimeId: string): SeatAvailability[] {
     const showtime = SYNTHETIC_CATALOG.showtimes.find(item => item.id === showtimeId);
+    if (!showtime || !this.isPublishedMovie(showtime.movieId)) {
+      return [];
+    }
+
     const room = showtime ? this.getRoom(showtime.roomId) : undefined;
     return (room?.seats ?? []).map((seat, index) => ({ label: seat.label, available: index > 0 }));
+  }
+
+  private isPublishedMovie(movieId: string): boolean {
+    return SYNTHETIC_CATALOG.movies.some(
+      movie => movie.id === movieId && movie.publicationStatus === 'PUBLISHED',
+    );
   }
 }

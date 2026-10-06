@@ -35,4 +35,9 @@ describe('SyntheticCatalogDataService', () => {
     expect(seats[0].available).toBeFalse();
     expect(seats.slice(1).every(seat => seat.available)).toBeTrue();
   });
+
+  it('does not expose showtimes or seats for a draft movie', () => {
+    expect(service.getShowtimes('22222222-2222-2222-2222-222222222222')).toEqual([]);
+    expect(service.getSeats('st-draft')).toEqual([]);
+  });
 });
