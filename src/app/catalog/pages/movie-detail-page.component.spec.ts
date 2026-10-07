@@ -84,4 +84,77 @@ describe('MovieDetailPageComponent', () => {
       expect(content).toContain(expectedTime);
     });
   });
+
+  it('displays dynamic rating when movie has rating', () => {
+    const movieWithRating = SYNTHETIC_CATALOG.movies.find(m => m.rating && m.publicationStatus === 'PUBLISHED')!;
+    const fixture = TestBed.configureTestingModule({
+      imports: [MovieDetailPageComponent],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: {
+                get: () => movieWithRating.id,
+              },
+            },
+          },
+        },
+      ],
+    }).createComponent(MovieDetailPageComponent);
+
+    fixture.detectChanges();
+    const content = fixture.nativeElement.textContent;
+
+    expect(content).toContain('Rating: ★ ' + movieWithRating.rating);
+  });
+
+  it('hides rating badge when movie has no rating', () => {
+    const movieWithoutRating = SYNTHETIC_CATALOG.movies.find(m => !m.rating && m.publicationStatus === 'PUBLISHED')!;
+    const fixture = TestBed.configureTestingModule({
+      imports: [MovieDetailPageComponent],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: {
+                get: () => movieWithoutRating.id,
+              },
+            },
+          },
+        },
+      ],
+    }).createComponent(MovieDetailPageComponent);
+
+    fixture.detectChanges();
+    const content = fixture.nativeElement.textContent;
+
+    expect(content).not.toContain('Rating: ★');
+  });
+
+  it('does not render site-header or brand elements (shell owns header)', () => {
+    const publishedMovie = SYNTHETIC_CATALOG.movies.find(m => m.publicationStatus === 'PUBLISHED')!;
+    const fixture = TestBed.configureTestingModule({
+      imports: [MovieDetailPageComponent],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: {
+                get: () => publishedMovie.id,
+              },
+            },
+          },
+        },
+      ],
+    }).createComponent(MovieDetailPageComponent);
+
+    fixture.detectChanges();
+    const header = fixture.nativeElement.querySelector('.site-header');
+    const brand = fixture.nativeElement.querySelector('.brand');
+    expect(header).toBeNull();
+    expect(brand).toBeNull();
+  });
 });
