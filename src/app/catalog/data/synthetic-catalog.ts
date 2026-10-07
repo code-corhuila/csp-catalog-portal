@@ -9,6 +9,7 @@ export interface SyntheticMovie {
   trailerUrl?: string;
   description?: string;
   imageUrl?: string;
+  rating?: number;
 }
 
 interface SyntheticRoom {
@@ -53,7 +54,8 @@ export const SYNTHETIC_CATALOG: SyntheticCatalog = {
       publicationStatus: 'PUBLISHED',
       trailerUrl: 'https://www.youtube.com/watch?v=zSWdZVtXT7E',
       description: 'Un grupo de exploradores viaja a través de un agujero de gusano.',
-      imageUrl: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=600&q=80'
+      imageUrl: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=600&q=80',
+      rating: 9.2
     },
     {
       id: 'a2222222-2222-2222-2222-222222222222',
@@ -63,7 +65,8 @@ export const SYNTHETIC_CATALOG: SyntheticCatalog = {
       publicationStatus: 'PUBLISHED',
       trailerUrl: 'https://www.youtube.com/watch?v=uYPbbksJxIg',
       description: 'La historia del físico teórico J. Robert Oppenheimer.',
-      imageUrl: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=600&q=80'
+      imageUrl: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=600&q=80',
+      rating: 8.9
     },
     {
       id: 'a3333333-3333-3333-3333-333333333333',
@@ -73,7 +76,8 @@ export const SYNTHETIC_CATALOG: SyntheticCatalog = {
       publicationStatus: 'PUBLISHED',
       trailerUrl: 'https://www.youtube.com/watch?v=EXeTwQWrcwY',
       description: 'Batman se enfrenta al Guasón en la ciudad de Gotham.',
-      imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80'
+      imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
+      rating: 9.0
     },
     {
       id: 'a4444444-4444-4444-4444-444444444444',
@@ -83,7 +87,8 @@ export const SYNTHETIC_CATALOG: SyntheticCatalog = {
       publicationStatus: 'PUBLISHED',
       trailerUrl: 'https://www.youtube.com/watch?v=d9MyW72ELq0',
       description: 'Jake Sully y Neytiri exploran las regiones acuáticas de Pandora.',
-      imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80'
+      imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80',
+      rating: 8.5
     }
   ],
   rooms: [
