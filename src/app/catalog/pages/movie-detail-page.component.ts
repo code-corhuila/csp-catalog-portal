@@ -46,7 +46,7 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
               <ul class="showtime-grid">
                 @for (showtime of showtimes; track showtime.id) {
                   <li>
-                    <a class="showtime-button" [routerLink]="['/showtimes', showtime.id, 'seats']">
+                    <a class="showtime-button" [routerLink]="['/booking/showtime', showtime.id]">
                       {{ showtime.startsAt | date: 'shortTime' }}
                     </a>
                   </li>
