@@ -9,15 +9,7 @@ import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-ca
   standalone: true,
   imports: [CommonModule, DatePipe, FormsModule, RouterLink],
   template: `
-    <div class="page-container">
-      <header class="site-header" aria-label="Navegación CineSync">
-        <a class="brand" routerLink="/" aria-label="Inicio CineSync">
-          <img class="brand-logo" src="/assets/logos/icon-csp.svg" alt="CineSync">
-          <span class="brand-name">Cine<span>Sync</span></span>
-        </a>
-      </header>
-
-      <main class="content-wrapper">
+    <main class="content-wrapper">
         <section class="hero-banner">
           <span class="hero-badge">TU CINE, TU EXPERIENCIA</span>
           <h1 class="hero-title">Vive el cine <span class="highlight">como nunca.</span></h1>
@@ -54,7 +46,9 @@ import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-ca
                 [routerLink]="['/movies', movie.id]"
               >
                 <div class="poster-overlay">
-                  <span class="poster-rating">★ 9.2</span>
+                  @if (movie.rating) {
+                    <span class="poster-rating">★ {{ movie.rating }}</span>
+                  }
                   <span class="poster-mark">CS</span>
                 </div>
               </div>
@@ -85,32 +79,22 @@ import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-ca
           }
         </section>
       </main>
-    </div>
   `,
   styles: [`
     :host {
       --brand: #8B5CF6;
       --brand-hover: #A78BFA;
       --cyan: #38BDF8;
-      --background: #0B0D17;
       --surface: #13172A;
       --border: rgba(255, 255, 255, 0.08);
       --text: #F1F5F9;
       --muted: #94A3B8;
       display: block;
       width: 100%;
-      min-height: 100vh;
-      background: var(--background);
       color: var(--text);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    .page-container { width: 100%; min-height: 100vh; display: flex; flex-direction: column; }
-    .site-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; background: #070913; border-bottom: 1px solid var(--border); box-sizing: border-box; }
-    .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
-    .brand-logo { width: 38px; height: 38px; object-fit: contain; }
-    .brand-name { font-size: 1.2rem; font-weight: 800; }
-    .brand-name span { color: var(--cyan); }
     .content-wrapper { max-width: 1400px; width: 100%; margin: 0 auto; padding: 32px 24px 64px; box-sizing: border-box; }
     .hero-banner { background: linear-gradient(180deg, rgba(139, 92, 246, 0.12) 0%, rgba(11, 13, 23, 0) 100%); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 16px; padding: 48px 32px; margin-bottom: 28px; }
     .hero-badge { display: inline-block; background: rgba(139, 92, 246, 0.15); color: #C084FC; border: 1px solid rgba(139, 92, 246, 0.3); padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; margin-bottom: 16px; }

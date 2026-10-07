@@ -156,22 +156,29 @@ describe("BillboardPageComponent", () => {
     expect(content).toContain("No se encontraron películas que coincidan con los criterios de búsqueda.");
   });
 
+  it("shows movie ratings from dataset and hides badge when rating is undefined", () => {
+    const fixture = createComponent();
+    fixture.detectChanges();
+    const movieCards = fixture.nativeElement.querySelectorAll(".movie-card");
+    const publishedMovies = SYNTHETIC_CATALOG.movies.filter((m) => m.publicationStatus === "PUBLISHED");
+
+    publishedMovies.forEach((movie, index) => {
+      const card = movieCards[index];
+      const ratingBadge = card.querySelector(".poster-rating");
+      if (movie.rating) {
+        expect(ratingBadge).not.toBeNull();
+        expect(ratingBadge.textContent).toContain(`★ ${movie.rating}`);
+      } else {
+        expect(ratingBadge).toBeNull();
+      }
+    });
+  });
+
   it("does not show auth buttons (simulates logged-in user)", () => {
     const fixture = createComponent();
     fixture.detectChanges();
     const content = fixture.nativeElement.textContent;
     expect(content).not.toContain("Iniciar sesión");
     expect(content).not.toContain("Registrarse");
-  });
-
-  it("shows CineSync branding in header", () => {
-    const fixture = createComponent();
-    fixture.detectChanges();
-    const logo = fixture.nativeElement.querySelector(".brand-logo");
-    expect(logo).not.toBeNull();
-    expect(logo.getAttribute("src")).toBe("/assets/logos/icon-csp.svg");
-    const brandName = fixture.nativeElement.querySelector(".brand-name");
-    expect(brandName).not.toBeNull();
-    expect(brandName.textContent).toContain("CineSync");
   });
 });

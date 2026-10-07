@@ -13,6 +13,7 @@ export type MovieExtended = Movie & {
   trailerUrl?: string;
   description?: string;
   imageUrl?: string;
+  rating?: number;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -29,6 +30,7 @@ export class SyntheticCatalogDataService {
         trailerUrl: movie.trailerUrl,
         description: movie.description,
         imageUrl: movie.imageUrl,
+        rating: movie.rating,
       }));
   }
 
