@@ -34,7 +34,7 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
 
             <div class="detail-content">
               <p class="eyebrow">
-                {{ currentMovie.genres?.join(' · ') }}{{ currentMovie.rating ? ' · Rating: ★ ' + currentMovie.rating : '' }}
+                {{ currentMovie.genres?.join(' · ') }}{{ currentMovie.rating != null ? ' · Rating: ★ ' + currentMovie.rating : '' }}
               </p>
               <h2>{{ currentMovie.title }}</h2>
               <p class="metadata">{{ currentMovie.durationMinutes }} minutos · Publicada</p>
