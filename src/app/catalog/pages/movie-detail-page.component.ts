@@ -11,15 +11,6 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
     @if (movie; as currentMovie) {
       <main class="detail-shell">
         <section class="detail-card">
-          <!-- Header alineado con el ancho de la tarjeta -->
-          <nav class="site-header" aria-label="Navegación CineSync">
-            <a class="brand" routerLink="/" aria-label="Inicio CineSync">
-              <span class="brand-mark">CS</span>
-              <span class="brand-name">Cine<span>Sync</span></span>
-            </a>
-            <span class="nav-title">PELÍCULA</span>
-          </nav>
-
           <div class="inner-content">
             <a class="back-link" routerLink="/">← Volver a la cartelera</a>
 
@@ -43,7 +34,7 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
 
             <div class="detail-content">
               <p class="eyebrow">
-                {{ currentMovie.genres?.join(' · ') }} · Rating: ★ 9.2
+                {{ currentMovie.genres?.join(' · ') }}{{ currentMovie.rating ? ' · Rating: ★ ' + currentMovie.rating : '' }}
               </p>
               <h2>{{ currentMovie.title }}</h2>
               <p class="metadata">{{ currentMovie.durationMinutes }} minutos · Publicada</p>
@@ -71,17 +62,14 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
   `,
   styles: [`
     :host { 
-      background: #0B0D17; 
       color: #F1F5F9; 
       display: block; 
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
-      min-height: 100vh; 
     }
 
     .detail-shell { 
       margin: 0 auto; 
       max-width: 860px; 
-      min-height: 100vh; 
       padding: 40px 24px 72px; 
       box-sizing: border-box;
     }
@@ -95,21 +83,6 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
       display: flex;
       flex-direction: column;
     }
-
-    .site-header { 
-      align-items: center; 
-      border-bottom: 1px solid rgba(255, 255, 255, .08); 
-      display: flex; 
-      justify-content: space-between; 
-      padding: 20px 32px; 
-      background: rgba(11, 13, 23, 0.4);
-    }
-
-    .brand { align-items: center; color: #F1F5F9; display: inline-flex; gap: 10px; text-decoration: none; }
-    .brand-mark { align-items: center; background: #8B5CF6; border-radius: 8px; box-shadow: 0 0 16px rgba(139, 92, 246, .45); color: white; display: inline-flex; font-size: .85rem; font-weight: 900; height: 32px; justify-content: center; letter-spacing: -.08em; width: 32px; }
-    .brand-name { font-size: 1.15rem; font-weight: 800; letter-spacing: -.04em; }
-    .brand-name span { color: #38BDF8; }
-    .nav-title { color: #94A3B8; font-size: .7rem; font-weight: 800; letter-spacing: .16em; }
 
     .inner-content { padding: 28px 32px 36px; }
 
