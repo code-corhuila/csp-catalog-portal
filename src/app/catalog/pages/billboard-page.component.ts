@@ -15,10 +15,6 @@ import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-ca
           <img class="brand-logo" src="/assets/logos/icon-csp.svg" alt="CineSync">
           <span class="brand-name">Cine<span>Sync</span></span>
         </a>
-        <div class="auth-buttons">
-          <button type="button" class="btn-secondary">Iniciar sesión</button>
-          <button type="button" class="btn-primary">Registrarse</button>
-        </div>
       </header>
 
       <main class="content-wrapper">
@@ -115,9 +111,6 @@ import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-ca
     .brand-logo { width: 38px; height: 38px; object-fit: contain; }
     .brand-name { font-size: 1.2rem; font-weight: 800; }
     .brand-name span { color: var(--cyan); }
-    .auth-buttons { display: flex; gap: 12px; }
-    .btn-secondary { background: transparent; border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
-    .btn-primary { background: var(--brand); border: none; color: white; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
     .content-wrapper { max-width: 1400px; width: 100%; margin: 0 auto; padding: 32px 24px 64px; box-sizing: border-box; }
     .hero-banner { background: linear-gradient(180deg, rgba(139, 92, 246, 0.12) 0%, rgba(11, 13, 23, 0) 100%); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 16px; padding: 48px 32px; margin-bottom: 28px; }
     .hero-badge { display: inline-block; background: rgba(139, 92, 246, 0.15); color: #C084FC; border: 1px solid rgba(139, 92, 246, 0.3); padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; margin-bottom: 16px; }
