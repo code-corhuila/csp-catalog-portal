@@ -236,6 +236,17 @@ describe('AdminCatalogStateService', () => {
     expect(service.showtimes().length).toBe(before + 1);
   });
 
+  it('allows back-to-back showtimes that touch the occupied window', () => {
+    const busy = service.showtimes()[0];
+    const before = service.showtimes().length;
+
+    // Starts exactly when the busy showtime ends: strict `<` must not report a conflict.
+    const result = service.scheduleShowtime(busy.movieId, busy.roomId, busy.endsAt);
+
+    expect(result.ok).toBeTrue();
+    expect(service.showtimes().length).toBe(before + 1);
+  });
+
   it('asks for every field when the schedule is incomplete', () => {
     const before = service.showtimes().length;
 
