@@ -5,6 +5,11 @@ export const CATALOG_ROUTES: Routes = [
     loadComponent: () => import('./pages/billboard-page.component').then(m => m.BillboardPageComponent),
   },
   {
+    path: 'movies',
+    pathMatch: 'full',
+    redirectTo: '',
+  },
+  {
     path: 'movies/:movieId',
     loadComponent: () => import('./pages/movie-detail-page.component').then(m => m.MovieDetailPageComponent),
   },

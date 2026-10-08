@@ -9,4 +9,5 @@ export interface Movie {
   posterUrl?: string;
   cast?: string[];
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  rating?: number;
 }
