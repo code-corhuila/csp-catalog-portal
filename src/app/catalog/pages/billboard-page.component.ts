@@ -54,7 +54,7 @@ import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-ca
               </div>
 
               <div class="movie-info">
-                <h3 class="movie-title" [routerLink]="['/movies', movie.id]">{{ movie.title }}</h3>
+                <h3 class="movie-title" [routerLink]="['movies', movie.id]">{{ movie.title }}</h3>
                 <p class="movie-genre">{{ movie.genres?.join(' · ') }} · {{ movie.durationMinutes }} min</p>
                 <p class="movie-description">{{ movie.description }}</p>
                 
@@ -69,7 +69,7 @@ import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-ca
                   }
                 </div>
 
-                <a class="primary-action" [routerLink]="['/movies', movie.id]">
+                <a class="primary-action" [routerLink]="['movies', movie.id]">
                   Ver película
                 </a>
               </div>

@@ -12,7 +12,7 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
       <main class="detail-shell">
         <section class="detail-card">
           <div class="inner-content">
-            <a class="back-link" routerLink="/">← Volver a la cartelera</a>
+            <a class="back-link" routerLink="../">← Volver a la cartelera</a>
 
             <!-- Banner con imagen de fondo y botón de YouTube -->
             <div 
