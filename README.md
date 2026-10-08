@@ -46,9 +46,27 @@ local values and never commit it.
 The Catalog portal currently exercises the billboard and seat-map flow with a typed local dataset
 under `src/app/catalog/data/`. `SyntheticCatalogDataService` is the ADR-022 data boundary for
 this Cut 2 slice: it does not use `HttpClient` or a backend and filters `DRAFT` movies before
-the billboard renders. The dataset includes `The Silent Reel`, one showtime, Room 1, and seats
-`A1` through `B3`. Seat availability is deterministic demo data: `A1` is unavailable for the
-synthetic showtime so the UI can render both states. It is not a reservation model and must be
-replaced by the Catalog availability response when the backend integration is introduced.
+the billboard renders. The dataset includes 5 published movies (`The Silent Reel`, `Interstellar`,
+`Oppenheimer`, `The Dark Knight`, `Avatar: The Way of Water`) and 1 draft movie (`Neon Sky`),
+one room (`Room 1`) with **48 seats distributed in 6 rows × 8 columns: A1 through F8**.
+Seat availability is deterministic demo data: `A1` is unavailable for the synthetic showtime so the
+UI can render both states. It is not a reservation model and must be replaced by the Catalog
+availability response when the backend integration is introduced.
 Showtimes and seats linked to `DRAFT` movies are excluded by the same service boundary, including
 when a user navigates directly to a showtime URL.
+
+### Cut 2 — Seat Map & Showtime Configuration
+
+#### Seat Map
+- **48 seats** distributed in 6 rows × 8 columns: **A1–F8**
+- A1: occupied (demo), A2–F8: available
+
+#### Showtime IDs
+- All `showtimeId` are **UUID v4** for compatibility with Booking API
+- Same UUID in Catalog and Booking
+
+#### Integration Catalog ↔ Booking
+- Catalog exposes billboard and detail at `/movies/:id`
+- **Seat selection → Booking portal** at `/booking/showtime/:showtimeId`
+- Catalog **does not** implement hold/reservation (that is HU-FE-BOOKING-001)
+- Showtime DRAFT (`bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb`) does not expose seat map

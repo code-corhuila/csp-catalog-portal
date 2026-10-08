@@ -62,7 +62,7 @@ import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-ca
                   @for (showtime of getMovieShowtimes(movie.id); track showtime.id) {
                     <a 
                       class="showtime-link" 
-                      [routerLink]="['/showtimes', showtime.id, 'seats']"
+                      [routerLink]="['/booking/showtime', showtime.id]"
                     >
                       {{ showtime.startsAt | date: 'shortTime' }}
                     </a>
