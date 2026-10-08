@@ -38,7 +38,7 @@ describe('SyntheticCatalogDataService', () => {
 
   it('does not expose showtimes or seats for a draft movie', () => {
     expect(service.getShowtimes('22222222-2222-2222-2222-222222222222')).toEqual([]);
-    expect(service.getSeats('st-draft')).toEqual([]);
+    expect(service.getSeats('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')).toEqual([]);
   });
 
   describe('getMovie', () => {
