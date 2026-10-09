@@ -70,3 +70,28 @@ when a user navigates directly to a showtime URL.
 - **Seat selection → Booking portal** at `/booking/showtime/:showtimeId`
 - Catalog **does not** implement hold/reservation (that is HU-FE-BOOKING-001)
 - Showtime DRAFT (`bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb`) does not expose seat map
+
+## Administration view (`/admin/*`)
+
+The administration screens of `12-ux-ui/mockup/index-admin.html` live under `src/app/catalog/admin/`
+and are exposed to the shell as a **second entry point**, `./admin-routes`, exporting `ADMIN_ROUTES`:
+
+| Address | Page | Source of the design |
+|---|---|---|
+| `/admin/billboard` | `AdminBillboardPageComponent` — schedule a showtime (auto end time, room conflict alert) and list/delete the scheduled ones | mockup § CARTELERA |
+| `/admin/movies` | `AdminMoviesPageComponent` — create/delete movies (title, genre, duration, classification, synopsis, trailer) | mockup § PELÍCULAS |
+| `/admin/rooms` | `AdminRoomsPageComponent` — create/delete rooms with their seat capacity | mockup § SALAS |
+| `/admin/reports` | `AdminReportsPageComponent` — headline metrics, room occupancy and showtime summary (mock only) | mockup § REPORTES |
+
+- **Shell (`csp-front`)**: `catalogAdminMatcher` consumes only `admin` for `billboard`, `movies` and
+  `rooms`, then loads `ADMIN_ROUTES` behind `roleGuard('ADMIN')`. `reports` is not part of that
+  matcher, so inside the shell it keeps falling through to the 404 page; it is reachable when the
+  portal runs standalone (`npm start` → `http://localhost:4203/admin/reports`).
+- **Navigation**: the screens render their own section sub-nav with the `Admin` badge. The brand
+  header and the footer belong to the shell (and to `AppComponent` when standalone), so the portal
+  never duplicates them.
+- **Data**: `AdminCatalogStateService` seeds a mutable copy of `SYNTHETIC_CATALOG` for the session.
+  The constant itself is never modified: the public billboard, the seat map and the 40 original unit
+  tests keep reading the frozen dataset. No `HttpClient` is involved.
+- **Feedback**: `AdminToastService` drives the success/error toasts of the mockup (3.5 s each).
+
