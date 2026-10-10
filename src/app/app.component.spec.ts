@@ -44,6 +44,22 @@ describe("AppComponent (standalone)", () => {
     expect(fixture.nativeElement.querySelector(".site-header")).not.toBeNull();
   });
 
+  it("keeps the site header on a near-miss route that only starts with the admin word", async () => {
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [provideRouter([
+        { path: "administration", component: StubPage },
+        { path: "**", component: StubPage },
+      ])],
+    });
+    const router = TestBed.inject(Router);
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    await router.navigateByUrl("/administration");
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector(".site-header")).not.toBeNull();
+  });
+
   it("does not show auth buttons (shell handles auth)", () => {
     const fixture = createComponent();
     fixture.detectChanges();
