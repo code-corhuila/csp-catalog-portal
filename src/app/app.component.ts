@@ -1,17 +1,20 @@
-import { Component } from '@angular/core';
-import { RouterOutlet, RouterLink } from '@angular/router';
+import { Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { Router, RouterOutlet, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, RouterLink],
   template: `
-    <header class="site-header" aria-label="Navegación CineSync">
-      <a class="brand" routerLink="/" aria-label="Inicio CineSync">
-        <img class="brand-logo" src="/assets/logos/icon-csp.svg" alt="CineSync">
-        <span class="brand-name">Cine<span>Sync</span></span>
-      </a>
-    </header>
+    @if (!isAdminRoute()) {
+      <header class="site-header" aria-label="Navegación CineSync">
+        <a class="brand" routerLink="/" aria-label="Inicio CineSync">
+          <img class="brand-logo" src="/assets/logos/icon-csp.svg" alt="CineSync">
+          <span class="brand-name">Cine<span>Sync</span></span>
+        </a>
+      </header>
+    }
     <router-outlet />
   `,
   styles: [`
@@ -49,4 +52,16 @@ import { RouterOutlet, RouterLink } from '@angular/router';
 export class AppComponent {
   // Root component - only mounted when portal runs standalone
   // Inside the shell, the shell owns the header and this component is not rendered
+  private readonly router = inject(Router);
+  private readonly navigation = toSignal(this.router.events, { initialValue: undefined });
+
+  /**
+   * The administration module renders its own layout header
+   * (AdminLayoutComponent: brand, Admin badge and section nav), so the
+   * standalone site header must step aside on /admin/* to avoid stacking both.
+   */
+  readonly isAdminRoute = computed(() => {
+    this.navigation();
+    return this.router.url === '/admin' || this.router.url.startsWith('/admin/');
+  });
 }
