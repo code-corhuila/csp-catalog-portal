@@ -254,9 +254,9 @@ export const ADMIN_SHARED_STYLES = `
           <a class="nav-link" routerLink="/admin/rooms" routerLinkActive="active" ariaCurrentWhenActive="page">
             Salas
           </a>
-          <a class="nav-link" routerLink="/admin/reports" routerLinkActive="active" ariaCurrentWhenActive="page">
+          <span class="nav-link nav-link--disabled" aria-disabled="true" title="Reportes estará disponible en una próxima iteración">
             Reportes
-          </a>
+          </span>
         </nav>
       </div>
 
@@ -325,6 +325,11 @@ export const ADMIN_SHARED_STYLES = `
       .nav-link.active {
         color: var(--admin-cyan);
         font-weight: 700;
+      }
+
+      .nav-link--disabled {
+        color: var(--admin-text-muted);
+        cursor: not-allowed;
       }
 
       .toast-container {

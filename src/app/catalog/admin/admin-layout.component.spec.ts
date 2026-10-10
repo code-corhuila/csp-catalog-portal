@@ -18,23 +18,32 @@ describe("AdminLayoutComponent", () => {
     expect(badge!.textContent!.trim()).toBe("Admin");
   });
 
-  it("renders the administration links with the labels of the mockup", () => {
+  it("renders the navigable administration links with the labels of the mockup", () => {
     const fixture = createComponent();
     fixture.detectChanges();
-    const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll(".nav-link"));
+    const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("a.nav-link"));
 
     expect(links.map((link) => link.textContent!.trim())).toEqual([
       "Cartelera y Funciones",
       "Películas",
       "Salas",
-      "Reportes",
     ]);
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/admin/billboard",
       "/admin/movies",
       "/admin/rooms",
-      "/admin/reports",
     ]);
+  });
+
+  it("shows Reportes as a disabled item without a navigation attribute (out of this HU's scope)", () => {
+    const fixture = createComponent();
+    fixture.detectChanges();
+    const reports: HTMLElement | null = fixture.nativeElement.querySelector(".nav-link--disabled");
+
+    expect(reports).not.toBeNull();
+    expect(reports!.textContent!.trim()).toBe("Reportes");
+    expect(reports!.getAttribute("href")).toBeNull();
+    expect(reports!.getAttribute("aria-disabled")).toBe("true");
   });
 
   it("renders an outlet for the active administration page", () => {
