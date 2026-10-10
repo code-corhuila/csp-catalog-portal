@@ -44,6 +44,27 @@ describe("AppComponent (standalone)", () => {
     expect(fixture.nativeElement.querySelector(".site-header")).not.toBeNull();
   });
 
+  it("keeps the site header on near-miss routes that only start with the admin word", async () => {
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [provideRouter([
+        { path: "administration", component: StubPage },
+        { path: "admin-login", component: StubPage },
+        { path: "**", component: StubPage },
+      ])],
+    });
+    const router = TestBed.inject(Router);
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    for (const nearMiss of ["/administration", "/admin-login"]) {
+      await router.navigateByUrl(nearMiss);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector(".site-header"))
+        .withContext(`site header must stay visible at ${nearMiss}`)
+        .not.toBeNull();
+    }
+  });
+
   it("does not show auth buttons (shell handles auth)", () => {
     const fixture = createComponent();
     fixture.detectChanges();
