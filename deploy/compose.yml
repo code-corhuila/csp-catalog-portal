@@ -1,0 +1,14 @@
+name: csp-catalog-portal
+
+services:
+  catalog-portal:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    expose: ["8080"]
+    networks: [platform]
+
+networks:
+  platform:
+    name: platform
+    external: true
