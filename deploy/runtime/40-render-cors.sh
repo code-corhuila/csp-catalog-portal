@@ -9,5 +9,15 @@ if [ -z "${CORS_ALLOWED_ORIGIN_REGEX:-}" ]; then
   exit 1
 fi
 
+# ADR-026 only holds if the pattern is anchored: nginx matches it against the whole Origin
+# header, so an unanchored value would also accept any origin that merely contains it.
+case "${CORS_ALLOWED_ORIGIN_REGEX}" in
+  ^*'$') ;;
+  *)
+    echo "csp-catalog-portal: CORS_ALLOWED_ORIGIN_REGEX must be a fully anchored regex (^...\$): ${CORS_ALLOWED_ORIGIN_REGEX}" >&2
+    exit 1
+    ;;
+esac
+
 envsubst '${CORS_ALLOWED_ORIGIN_REGEX}' < /opt/csp-runtime/cors-origin.conf.template > /etc/nginx/conf.d/cors-origin.conf
 echo "csp-catalog-portal: CORS rule rendered"

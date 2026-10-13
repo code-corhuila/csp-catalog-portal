@@ -45,4 +45,8 @@ jobs:
             # Anchored regex: an origin that merely contains the allowed one must not pass.
             ! curl -fsD - -o /dev/null -H 'Origin: http://localhost:4200.evil.example' "http://localhost:8080/$file" | grep -i '^access-control-allow-origin'
           done
+          # location / serves the portal HTML, which the shell never loads cross-origin: it must
+          # answer 200 and carry no CORS header at all (the README claims it; this keeps it true).
+          curl -fs -o /dev/null -H 'Origin: http://localhost:4200' http://localhost:8080/
+          ! curl -fsD - -o /dev/null -H 'Origin: http://localhost:4200' http://localhost:8080/ | grep -i '^access-control-allow'
           docker rm -f portal
