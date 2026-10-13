@@ -6,7 +6,23 @@ All notable changes of `csp-catalog-portal` are recorded here. The format follow
 re-applied with `git cherry-pick -x` (numerals 6.2.3, 10 and 11 of the course norm); it reaches `main` by pull request, never by merging `qa`,
 and is tagged `v<version>` once it is merged.
 
-## [Unreleased]
+## [2.0.1] - 2026-10-13
+
+Patch release of Cut 2: the infrastructure fixes that align the portal's container with
+`csp-auth-portal` and `csp-concessions-portal` (published port and CORS per ADR-026).
+
+### Fixed
+
+- The container answers `Access-Control-Allow-Origin` from `CORS_ALLOWED_ORIGIN_REGEX`, rendered at
+  startup by `deploy/runtime/40-render-cors.sh` (ADR-026), instead of the wildcard `*`, and refuses
+  to start without the variable or with a value that is not a fully anchored regex (`^…$`); CI builds
+  the image and checks the rule, including that `location /` carries no CORS header at all.
+  ([#29](https://github.com/code-corhuila/csp-catalog-portal/issues/29))
+- The container is published as `4203:80` on the external `csp-frontend` network, mirroring
+  `csp-auth-portal` and `csp-concessions-portal` (same image, internal port 80 and healthcheck), so
+  the dockerized shell can load `http://localhost:4203/remoteEntry.json`; the previous
+  `expose: [8080]` on the `platform` network never published the port on the host.
+  ([#6](https://github.com/code-corhuila/csp-catalog-portal/issues/6))
 
 ## [2.0.0] - 2026-10-11
 
