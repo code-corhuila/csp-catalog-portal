@@ -38,8 +38,19 @@ npm start                                  # dev server on port 4203
 docker build -f deploy/Dockerfile -t csp-catalog-portal .
 ```
 
-`deploy/compose.yml` joins the `platform` network and exposes port 8080 without publishing it. Copy `.env.example` to `.env` for
-local values and never commit it.
+## Container
+
+```
+docker network create csp-frontend   # once
+docker compose -f deploy/compose.yml up --build
+```
+
+The image listens on port 80 inside the container and is published as **`4203:80`**, the port the
+shell (`csp-front`) uses in `CATALOG_REMOTE_URL`; the container joins the external `csp-frontend`
+network, the same one as `csp-auth-portal` and `csp-concessions-portal`. `deploy/nginx.conf`
+answers `Access-Control-Allow-Origin: *` on the federation assets; rendering it from
+`CORS_ALLOWED_ORIGIN_REGEX` (ADR-026) is an open follow-up. Copy `.env.example` to `.env` for
+local values and never commit it. CI builds the image.
 
 ## HU-FE-CATALOG-001 synthetic data
 
