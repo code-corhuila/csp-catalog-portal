@@ -8,6 +8,12 @@ and is tagged `v<version>` once it is merged.
 
 ## [Unreleased]
 
+### Fixed
+
+- The container answers `Access-Control-Allow-Origin` from `CORS_ALLOWED_ORIGIN_REGEX`, rendered at
+  startup by `deploy/runtime/40-render-cors.sh` (ADR-026), instead of the wildcard `*`, and refuses
+  to start without the variable; CI builds the image and checks the rule. ([#29](https://github.com/code-corhuila/csp-catalog-portal/issues/29))
+
 ## [2.0.0] - 2026-10-11
 
 MVP 2 (Cut 2), first release of the portal's functionality. Story HU-FE-CATALOG-001
