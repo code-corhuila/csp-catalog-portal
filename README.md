@@ -55,9 +55,13 @@ starts (ADR-026) and refuses to start without it:
 |---|---|---|
 | `CORS_ALLOWED_ORIGIN_REGEX` | Origins allowed to load `remoteEntry.json` and the modules of the portal | `^http://localhost:420[0-5]$` |
 
+`CORS_ALLOWED_ORIGIN_REGEX` **must be a fully anchored regular expression (`^…$`)**: nginx matches
+the pattern against the whole `Origin` header, and an unanchored value would also accept any
+origin that merely contains it (for example `http://localhost:4200.evil.example`).
 `deploy/compose.yml` sets the development value when the variable is not defined. Copy `.env.example` to `.env` for
 local values and never commit it. CI builds the image and checks that it answers the allowed
-origin, stays silent for any other, and does not start without the variable.
+origin, stays silent for any other — including an origin that only contains the allowed one —
+and does not start without the variable.
 
 ## HU-FE-CATALOG-001 synthetic data
 

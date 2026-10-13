@@ -42,5 +42,7 @@ jobs:
           for file in remoteEntry.json "$module"; do
             curl -fsD - -o /dev/null -H 'Origin: http://localhost:4200' "http://localhost:8080/$file" | grep -i '^access-control-allow-origin: http://localhost:4200'
             ! curl -fsD - -o /dev/null -H 'Origin: http://evil.example' "http://localhost:8080/$file" | grep -i '^access-control-allow-origin'
+            # Anchored regex: an origin that merely contains the allowed one must not pass.
+            ! curl -fsD - -o /dev/null -H 'Origin: http://localhost:4200.evil.example' "http://localhost:8080/$file" | grep -i '^access-control-allow-origin'
           done
           docker rm -f portal
