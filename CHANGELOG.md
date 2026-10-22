@@ -10,6 +10,11 @@ and is tagged `v<version>` once it is merged.
 
 ### Added
 
+- `BillboardSearchState` (HU-FE-CATALOG-002): the state of the billboard search with signals for the filters (text, genre,
+  maximum duration), the page of published movies, the upcoming showtimes of those movies (asked four movies at a time),
+  the loading, empty and error states with retry, and the genres seen so far as suggestions. A new request cancels the
+  previous one and an error is shown as an error, never replaced by synthetic data. Nothing uses it yet: the billboard
+  page follows.
 - `CatalogApiService` and the models of the public reads of the Catalog service (HU-FE-CATALOG-002): `getBillboard` and
   `searchMovies` call `GET /api/v1/catalog/billboard` and `GET /api/v1/catalog/billboard/movies` through the HttpClient of
   the shell, send only the filters that have a value, set no header and let every error reach the caller. Nothing uses it
