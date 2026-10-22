@@ -10,6 +10,11 @@ and is tagged `v<version>` once it is merged.
 
 ### Added
 
+- The movie detail reads the real Catalog API (HU-FE-CATALOG-002): it takes the movie that the billboard passes in the
+  navigation state or, on a direct URL, from the upcoming showtimes of the movie (`GET /billboard?movieId=`), links each
+  showtime to its booking, and shows the loading, not available and error states with a retry; the trailer and the rating
+  of the synthetic dataset are gone. The README says what is real and what is still synthetic (the seat map and the
+  administration view).
 - The billboard page reads the real Catalog API (HU-FE-CATALOG-002): a search form (text, genre with the genres seen as
   suggestions, maximum duration), twelve movies per page with pagination, the upcoming showtimes of each movie linked to its
   booking, and the loading, empty and error states with a retry, through `BillboardSearchState`. It no longer reads the
