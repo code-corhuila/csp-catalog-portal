@@ -63,9 +63,22 @@ local values and never commit it. CI builds the image and checks that it answers
 origin, stays silent for any other — including an origin that only contains the allowed one —
 and does not start without the variable.
 
+## HU-FE-CATALOG-002 real catalog data
+
+The billboard (`/`) and the movie detail (`/movies/:movieId`) read the public routes of `csp-catalog-api` through the
+HttpClient of the shell: `GET /api/v1/catalog/billboard` and `GET /api/v1/catalog/billboard/movies`, which the API gateway
+routes since `csp-api-gateway#9` (`APP_GATEWAY_CATALOG_UPSTREAM`). `CatalogApiService` is the typed client and
+`BillboardSearchState` holds the filters, the page, the showtimes and the loading, empty and error states. The billboard
+searches by text, genre (the exact value, with the genres seen as suggestions) and maximum duration, twelve movies per page.
+The API has no route for one movie: the detail takes the movie that the billboard passes in the navigation state or, on a
+direct URL, from the upcoming showtimes of the movie, so a movie with none is shown as not available. Neither screen reads
+the synthetic dataset or falls back to it: an error is shown as an error with a retry.
+
+Still synthetic: the seat map (its source for clients depends on Booking) and the administration view.
+
 ## HU-FE-CATALOG-001 synthetic data
 
-The Catalog portal currently exercises the billboard and seat-map flow with a typed local dataset
+The Catalog portal exercises the seat-map flow and the administration view with a typed local dataset
 under `src/app/catalog/data/`. `SyntheticCatalogDataService` is the ADR-022 data boundary for
 this Cut 2 slice: it does not use `HttpClient` or a backend and filters `DRAFT` movies before
 the billboard renders. The dataset includes 5 published movies (`The Silent Reel`, `Interstellar`,
