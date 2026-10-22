@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
+import { RouterLink, provideRouter } from '@angular/router';
 import { NEVER, Observable, of, Subject, throwError } from 'rxjs';
 import { CatalogApiService } from '../data/catalog-api.service';
 import { SYNTHETIC_CATALOG } from '../data/synthetic-catalog';
@@ -106,6 +107,17 @@ describe('BillboardPageComponent', () => {
 
       const link = query(fixture, 'a.primary-action') as HTMLAnchorElement;
       expect(link.getAttribute('href')).toBe('/movies/movie-1');
+    });
+
+    it('passes the movie with each link to its detail, so the detail can show it at once', () => {
+      const fixture = create(of(moviesPage([movie(1)])));
+
+      const links = fixture.debugElement
+        .queryAll(By.directive(RouterLink))
+        .filter(item => (item.nativeElement as HTMLElement).matches('.poster, .movie-title, a.primary-action'));
+
+      expect(links.length).toBe(3);
+      links.forEach(item => expect(item.injector.get(RouterLink).state).toEqual({ movie: movie(1) }));
     });
 
     it('never shows the synthetic dataset', () => {
