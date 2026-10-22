@@ -10,6 +10,10 @@ and is tagged `v<version>` once it is merged.
 
 ### Added
 
+- The billboard page reads the real Catalog API (HU-FE-CATALOG-002): a search form (text, genre with the genres seen as
+  suggestions, maximum duration), twelve movies per page with pagination, the upcoming showtimes of each movie linked to its
+  booking, and the loading, empty and error states with a retry, through `BillboardSearchState`. It no longer reads the
+  synthetic dataset and never falls back to it. The movie detail and the seat map still read the synthetic dataset.
 - `BillboardSearchState` (HU-FE-CATALOG-002): the state of the billboard search with signals for the filters (text, genre,
   maximum duration), the page of published movies, the upcoming showtimes of those movies (asked four movies at a time),
   the loading, empty and error states with retry, and the genres seen so far as suggestions. A new request cancels the
