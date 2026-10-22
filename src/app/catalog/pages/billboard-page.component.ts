@@ -59,7 +59,7 @@ import { BillboardMovie } from '../model/billboard';
               <div
                 class="poster"
                 [style.background-image]="movie.posterUrl ? 'url(' + movie.posterUrl + ')' : ''"
-                [routerLink]="getMovieRoute(movie)"
+                [routerLink]="getMovieRoute(movie)" [state]="{ movie }"
               >
                 <div class="poster-overlay">
                   <span class="poster-mark">CS</span>
@@ -67,7 +67,7 @@ import { BillboardMovie } from '../model/billboard';
               </div>
 
               <div class="movie-info">
-                <h3 class="movie-title" [routerLink]="getMovieRoute(movie)">{{ movie.title }}</h3>
+                <h3 class="movie-title" [routerLink]="getMovieRoute(movie)" [state]="{ movie }">{{ movie.title }}</h3>
                 <p class="movie-genre">{{ subtitle(movie) }}</p>
                 <p class="movie-description">{{ movie.synopsis }}</p>
 
@@ -87,7 +87,7 @@ import { BillboardMovie } from '../model/billboard';
                   }
                 </div>
 
-                <a class="primary-action" [routerLink]="getMovieRoute(movie)">
+                <a class="primary-action" [routerLink]="getMovieRoute(movie)" [state]="{ movie }">
                   Ver película
                 </a>
               </div>
