@@ -6,6 +6,20 @@ All notable changes of `csp-catalog-portal` are recorded here. The format follow
 re-applied with `git cherry-pick -x` (numerals 6.2.3, 10 and 11 of the course norm); it reaches `main` by pull request, never by merging `qa`,
 and is tagged `v<version>` once it is merged.
 
+## [Unreleased]
+
+### Added
+
+- `BillboardSearchState` (HU-FE-CATALOG-002): the state of the billboard search with signals for the filters (text, genre,
+  maximum duration), the page of published movies, the upcoming showtimes of those movies (asked four movies at a time),
+  the loading, empty and error states with retry, and the genres seen so far as suggestions. A new request cancels the
+  previous one and an error is shown as an error, never replaced by synthetic data. Nothing uses it yet: the billboard
+  page follows.
+- `CatalogApiService` and the models of the public reads of the Catalog service (HU-FE-CATALOG-002): `getBillboard` and
+  `searchMovies` call `GET /api/v1/catalog/billboard` and `GET /api/v1/catalog/billboard/movies` through the HttpClient of
+  the shell, send only the filters that have a value, set no header and let every error reach the caller. Nothing uses it
+  yet: the billboard page and the movie detail follow in their own pull requests.
+
 ## [2.0.1] - 2026-10-13
 
 Patch release of Cut 2: the infrastructure fixes that align the portal's container with
