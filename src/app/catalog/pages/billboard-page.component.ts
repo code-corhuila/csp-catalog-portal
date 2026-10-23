@@ -1,13 +1,15 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-catalog-data.service';
+import { BillboardSearchState } from '../data/billboard-search-state';
+import { BillboardMovie } from '../model/billboard';
 
 @Component({
   selector: 'app-billboard-page',
   standalone: true,
   imports: [CommonModule, DatePipe, FormsModule, RouterLink],
+  providers: [BillboardSearchState],
   template: `
     <main class="content-wrapper">
         <section class="hero-banner">
@@ -18,66 +20,90 @@ import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-ca
           </p>
         </section>
 
-        <section class="filter-bar">
+        <form class="filter-bar" (ngSubmit)="submit()">
           <div class="search-input">
-            <input 
-              type="text" 
-              placeholder="Buscar película por título..." 
-              [(ngModel)]="searchTerm" 
-            />
+            <input type="text" name="q" placeholder="Buscar por título o sinopsis..." [(ngModel)]="q" />
           </div>
           <div class="genre-select">
-            <select [(ngModel)]="selectedGenre">
-              <option value="">Todos los géneros</option>
-              @for (genre of availableGenres; track genre) {
-                <option [value]="genre">{{ genre }}</option>
+            <input type="text" name="genre" list="genre-suggestions" placeholder="Género" [(ngModel)]="genre" />
+            <datalist id="genre-suggestions">
+              @for (suggestion of state.genreSuggestions(); track suggestion) {
+                <option [value]="suggestion"></option>
               }
-            </select>
+            </datalist>
           </div>
-        </section>
+          <div class="duration-input">
+            <input type="number" name="durationMax" min="1" placeholder="Duración máx. (min)" [(ngModel)]="durationMax" />
+          </div>
+          <button type="submit" class="search-button">Buscar</button>
+        </form>
+
+        @switch (state.status()) {
+          @case ('loading') {
+            <p class="status-message" role="status">Cargando cartelera…</p>
+          }
+          @case ('error') {
+            <div class="error-state" role="alert">
+              <p>{{ state.error()?.userMessage }}</p>
+              <button type="button" class="retry" (click)="state.retry()">Reintentar</button>
+            </div>
+          }
+          @case ('empty') {
+            <p class="empty-state">No se encontraron películas que coincidan con los criterios de búsqueda.</p>
+          }
+        }
 
         <section class="movie-grid" aria-label="Películas en cartelera">
-          @for (movie of filteredMovies; track movie.id) {
+          @for (movie of state.movies(); track movie.id) {
             <article class="movie-card">
-              <!-- Imagen de Portada con Badge -->
-              <div 
-                class="poster" 
-                [style.background-image]="'url(' + (movie.imageUrl || '') + ')'"
-                [routerLink]="['/movies', movie.id]"
+              <div
+                class="poster"
+                [style.background-image]="movie.posterUrl ? 'url(' + movie.posterUrl + ')' : ''"
+                [routerLink]="getMovieRoute(movie)"
               >
                 <div class="poster-overlay">
-                  @if (movie.rating) {
-                    <span class="poster-rating">★ {{ movie.rating }}</span>
-                  }
                   <span class="poster-mark">CS</span>
                 </div>
               </div>
 
               <div class="movie-info">
-                <h3 class="movie-title" [routerLink]="['movies', movie.id]">{{ movie.title }}</h3>
-                <p class="movie-genre">{{ movie.genres?.join(' · ') }} · {{ movie.durationMinutes }} min</p>
-                <p class="movie-description">{{ movie.description }}</p>
-                
+                <h3 class="movie-title" [routerLink]="getMovieRoute(movie)">{{ movie.title }}</h3>
+                <p class="movie-genre">{{ subtitle(movie) }}</p>
+                <p class="movie-description">{{ movie.synopsis }}</p>
+
                 <div class="showtime-list">
-                  @for (showtime of getMovieShowtimes(movie.id); track showtime.id) {
-                    <a 
-                      class="showtime-link" 
-                      [routerLink]="['/booking/showtime', showtime.id]"
-                    >
-                      {{ showtime.startsAt | date: 'shortTime' }}
-                    </a>
+                  @if (state.showtimes().get(movie.id); as showtimes) {
+                    @for (showtime of showtimes; track showtime.id) {
+                      <a class="showtime-link" [routerLink]="['/booking/showtime', showtime.id]">
+                        {{ showtime.startsAt | date: 'MMM d, h:mm a' }}
+                      </a>
+                    } @empty {
+                      <span class="showtime-note">Sin funciones próximas</span>
+                    }
+                  } @else if (state.showtimesFailed()) {
+                    <span class="showtime-note">No se pudieron cargar las funciones</span>
+                  } @else {
+                    <span class="showtime-note">Cargando funciones…</span>
                   }
                 </div>
 
-                <a class="primary-action" [routerLink]="['movies', movie.id]">
+                <a class="primary-action" [routerLink]="getMovieRoute(movie)">
                   Ver película
                 </a>
               </div>
             </article>
-          } @empty {
-            <p class="empty-state">No se encontraron películas que coincidan con los criterios de búsqueda.</p>
           }
         </section>
+
+        @if (state.meta(); as meta) {
+          @if (meta.totalPages > 1) {
+            <nav class="pagination" aria-label="Paginación">
+              <button type="button" class="previous" [disabled]="meta.page <= 1" (click)="state.goToPage(meta.page - 1)">Anterior</button>
+              <span>Página {{ meta.page }} de {{ meta.totalPages }}</span>
+              <button type="button" class="next" [disabled]="meta.page >= meta.totalPages" (click)="state.goToPage(meta.page + 1)">Siguiente</button>
+            </nav>
+          }
+        }
       </main>
   `,
   styles: [`
@@ -104,8 +130,13 @@ import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-ca
     
     .filter-bar { display: flex; gap: 16px; margin-bottom: 32px; background: var(--surface); padding: 10px; border-radius: 12px; border: 1px solid var(--border); }
     .search-input { flex: 1; }
-    .search-input input, .genre-select select { width: 100%; background: var(--background); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; box-sizing: border-box; outline: none; }
-    .genre-select select option { background: var(--surface); color: var(--text); }
+    .search-input input, .genre-select input, .duration-input input { width: 100%; background: var(--background); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; box-sizing: border-box; outline: none; }
+    .search-button, .retry, .pagination button { background: rgba(139, 92, 246, 0.15); color: #C084FC; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 8px; font-weight: 700; padding: 10px 16px; cursor: pointer; }
+    .pagination button:disabled { opacity: 0.4; cursor: default; }
+    .pagination { display: flex; gap: 16px; align-items: center; justify-content: center; margin-top: 32px; color: var(--muted); }
+    .status-message, .showtime-note { color: var(--muted); font-size: 0.85rem; }
+    .status-message { text-align: center; padding: 24px 0; }
+    .error-state { color: var(--text); text-align: center; padding: 32px 0; }
 
     .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
     .movie-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s; }
@@ -158,31 +189,26 @@ import { SyntheticCatalogDataService, MovieExtended } from '../data/synthetic-ca
     .empty-state { color: var(--muted); grid-column: 1 / -1; text-align: center; padding: 48px 0; }
   `],
 })
-export class BillboardPageComponent {
-  private readonly dataService = inject(SyntheticCatalogDataService);
+export class BillboardPageComponent implements OnInit {
+  protected readonly state = inject(BillboardSearchState);
 
-  readonly movies: MovieExtended[] = this.dataService.getPublishedMovies();
+  q = '';
+  genre = '';
+  durationMax: number | null = null;
 
-  searchTerm: string = '';
-  selectedGenre: string = '';
-
-  get availableGenres(): string[] {
-    const genresSet = new Set<string>();
-    this.movies.forEach(movie => {
-      movie.genres?.forEach(genre => genresSet.add(genre));
-    });
-    return Array.from(genresSet);
+  ngOnInit(): void {
+    this.submit();
   }
 
-  get filteredMovies(): MovieExtended[] {
-    return this.movies.filter(movie => {
-      const matchesTitle = movie.title.toLowerCase().includes(this.searchTerm.toLowerCase());
-      const matchesGenre = !this.selectedGenre || movie.genres?.includes(this.selectedGenre);
-      return matchesTitle && matchesGenre;
-    });
+  submit(): void {
+    this.state.search({ q: this.q, genre: this.genre, durationMax: this.durationMax });
   }
 
-  getMovieShowtimes(movieId: string) {
-    return this.dataService.getShowtimes(movieId);
+  subtitle(movie: BillboardMovie): string {
+    return [...(movie.genres ?? []), `${movie.durationMinutes} min`].join(' · ');
+  }
+
+  getMovieRoute(movie: BillboardMovie): string[] {
+    return ['movies', movie.id];
   }
 }
