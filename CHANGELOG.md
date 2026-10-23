@@ -8,6 +8,11 @@ and is tagged `v<version>` once it is merged.
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-22
+
+Release 3.0.0 of the catalog portal, aligned with the 3.0.0 of the platform: HU-FE-CATALOG-002 (the portal reads the real
+Catalog API through the gateway) promoted from `qa` to `main`.
+
 ### Added
 
 - The movie detail reads the real Catalog API (HU-FE-CATALOG-002): it takes the movie that the billboard passes in the
