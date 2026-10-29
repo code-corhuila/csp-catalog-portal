@@ -29,6 +29,13 @@ and is tagged `v<version>` once it is merged.
   the shell, send only the filters that have a value, set no header and let every error reach the caller. Nothing uses it
   yet: the billboard page and the movie detail follow in their own pull requests.
 
+### Fixed
+
+- The container healthcheck, in `deploy/Dockerfile` and in `deploy/compose.yml`, calls `http://127.0.0.1/health` instead of
+  `http://localhost/health`: inside the container `localhost` resolves first to `::1` while nginx listens on IPv4 only, so the
+  container showed `unhealthy` although it served traffic. What `/health` verifies does not change (Q-012 and TD-025 of
+  `csp-docs`, ADR-026 amendment of 2026-10-13, code-corhuila/csp-catalog-portal#64).
+
 ## [2.0.1] - 2026-10-13
 
 Patch release of Cut 2: the infrastructure fixes that align the portal's container with
