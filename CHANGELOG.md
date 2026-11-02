@@ -15,6 +15,10 @@ Catalog API through the gateway) promoted from `qa` to `main`.
 
 ### Added
 
+- `CatalogAdminApiService`: typed calls to the administration routes of the Catalog service (`/movies`, `/rooms` and
+  `/showtimes` of `catalog-service.yaml` 1.10.0: list, get, create, update with PATCH and archive or cancel with DELETE),
+  with the `Idempotency-Key` that each write needs and `newIdempotencyKey()`. Nothing uses it yet: the administration
+  screens still read the synthetic data and move to it one resource at a time (`csp-catalog-portal#82`).
 - The movie detail reads the real Catalog API (HU-FE-CATALOG-002): it takes the movie that the billboard passes in the
   navigation state or, on a direct URL, from the upcoming showtimes of the movie (`GET /billboard?movieId=`), links each
   showtime to its booking, and shows the loading, not available and error states with a retry; the trailer and the rating
