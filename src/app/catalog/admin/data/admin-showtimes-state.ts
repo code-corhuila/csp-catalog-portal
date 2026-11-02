@@ -3,7 +3,7 @@ import { Observable, catchError, map, of, tap } from 'rxjs';
 import { ApiError, asApiError } from '../../../shell-contract';
 import { CatalogAdminApiService, RetryKeys } from '../../data/catalog-admin-api.service';
 import { CreateShowtimeRequest, ShowtimeRecord } from '../../model/admin';
-import { AdminResult, parseDateTimeLocal, toDateTimeLocalValue } from './admin-catalog-state.service';
+import { AdminResult } from './admin-catalog-state.service';
 import { LoadStatus } from './admin-movies-state';
 
 /** What the administrator typed in the form: local times as `datetime-local` gives them, the price in pesos. */
@@ -19,6 +19,22 @@ export interface NewShowtimeInput {
 const CENTS_PER_PESO = 100;
 
 const INCOMPLETE = 'Completa todos los campos.';
+
+/** Accepts both `yyyy-MM-ddTHH:mm` and `yyyy-MM-ddTHH:mm:ss` and parses it as local time. */
+export function parseDateTimeLocal(value: string): number {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return Number.NaN;
+  }
+  return Date.parse(trimmed.length === 16 ? `${trimmed}:00` : trimmed);
+}
+
+/** Formats a timestamp back to the `datetime-local` value format. */
+export function toDateTimeLocalValue(timestamp: number): string {
+  const date = new Date(timestamp);
+  const pad = (value: number): string => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 /** An instant of the service (UTC) shown as `yyyy-MM-dd HH:mm` in the local time of the administrator. */
 export function displayDateTime(instant: string): string {
