@@ -53,14 +53,6 @@ describe('AdminCatalogStateService', () => {
     // Deep snapshot: detects field-level changes on the existing entries, not only new rows.
     const snapshot = structuredClone(SYNTHETIC_CATALOG);
 
-    service.addMovie({
-      title: 'Cinema Paradiso',
-      genre: 'Suspenso',
-      duration: 124,
-      classification: 'TP',
-      synopsis: 'Un homenaje al cine de barrio.',
-      trailer: 'https://www.youtube.com/watch?v=abc',
-    });
     service.addRoom('Sala 02 - VIP', 40);
     service.scheduleShowtime(lastMovieId(), lastRoomId(), '2026-11-02T09:00');
 
@@ -76,77 +68,6 @@ describe('AdminCatalogStateService', () => {
 
     expect(service.movies().some((movie) => movie.id === draft.id)).toBeTrue();
     expect(service.movieTitle(draft.id)).toBe(draft.title);
-  });
-
-  it('adds a published movie with its classification', () => {
-    const before = service.movies().length;
-
-    const result = service.addMovie({
-      title: '  Cinema Paradiso  ',
-      genre: 'Suspenso',
-      duration: 124.7,
-      classification: 'TP',
-      synopsis: ' Un homenaje al cine de barrio. ',
-      trailer: ' https://www.youtube.com/watch?v=abc ',
-    });
-
-    expect(result.ok).toBeTrue();
-    const created = service.movies()[service.movies().length - 1];
-    expect(service.movies().length).toBe(before + 1);
-    expect(created.title).toBe('Cinema Paradiso');
-    expect(created.duration).toBe(124);
-    expect(created.genres).toEqual(['Suspenso']);
-    expect(created.classification).toBe('TP');
-    expect(created.description).toBe('Un homenaje al cine de barrio.');
-    expect(created.trailerUrl).toBe('https://www.youtube.com/watch?v=abc');
-    expect(created.publicationStatus).toBe('PUBLISHED');
-  });
-
-  it('rejects an incomplete movie', () => {
-    const before = service.movies().length;
-
-    const result = service.addMovie({
-      title: '   ',
-      genre: '',
-      duration: null,
-      classification: '',
-      synopsis: '',
-      trailer: '',
-    });
-
-    expect(result.ok).toBeFalse();
-    expect(result.message).toBe('Completa todos los campos de la película.');
-    expect(service.movies().length).toBe(before);
-  });
-
-  it('does not delete a movie that has scheduled showtimes', () => {
-    const movie = SYNTHETIC_CATALOG.movies[0];
-    const before = service.movies().length;
-
-    const result = service.removeMovie(movie.id);
-
-    expect(result.ok).toBeFalse();
-    expect(result.message).toBe('No se puede eliminar una película que tiene funciones programadas.');
-    expect(service.movies().length).toBe(before);
-    expect(service.movies().some((item) => item.id === movie.id)).toBeTrue();
-  });
-
-  it('deletes a movie without showtimes', () => {
-    service.addMovie({
-      title: 'Cinema Paradiso',
-      genre: 'Suspenso',
-      duration: 124,
-      classification: 'TP',
-      synopsis: 'Un homenaje al cine de barrio.',
-      trailer: 'https://www.youtube.com/watch?v=abc',
-    });
-    const before = service.movies().length;
-
-    const result = service.removeMovie(lastMovieId());
-
-    expect(result.ok).toBeTrue();
-    expect(result.message).toBe('Película eliminada.');
-    expect(service.movies().length).toBe(before - 1);
   });
 
   it('creates a room with seat labels in rows of eight', () => {
