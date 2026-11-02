@@ -255,6 +255,51 @@ describe('AdminBillboardPageComponent', () => {
     expect(component.selectedMovieId).toBe(MOVIE.id);
   });
 
+  describe('after the room overlap was shown', () => {
+    const refuseOverlap = (fixture: ComponentFixture<AdminBillboardPageComponent>) => {
+      fillForm(fixture.componentInstance);
+      fixture.componentInstance.schedule();
+      http
+        .expectOne(SHOWTIMES)
+        .flush(
+          { error: 'CONFLICT', message: 'La sala ya tiene una función en ese horario.' },
+          { status: 409, statusText: 'x' },
+        );
+      sync(fixture);
+      expect(fixture.nativeElement.querySelector('.alert')).not.toBeNull();
+    };
+
+    const edits: Array<[string, (component: AdminBillboardPageComponent) => void]> = [
+      ['movie', (component) => component.onMovieChange(MOVIE.id)],
+      ['room', (component) => component.onRoomChange(ROOM.id)],
+      ['start time', (component) => component.onStartChange('2026-11-03T20:00')],
+      ['price', (component) => component.onPriceChange(18000)],
+    ];
+
+    for (const [field, edit] of edits) {
+      it(`clears the alert when the person edits the ${field}`, () => {
+        const fixture = loaded([]);
+        refuseOverlap(fixture);
+
+        edit(fixture.componentInstance);
+        sync(fixture);
+
+        expect(fixture.nativeElement.querySelector('.alert')).toBeNull();
+      });
+    }
+
+    it('clears the alert when a showtime is cancelled, because its slot may be free now', () => {
+      const fixture = loaded();
+      refuseOverlap(fixture);
+
+      (rowsOf(fixture)[0].querySelector('.btn-danger') as HTMLButtonElement).click();
+      http.expectOne(`${SHOWTIMES}/${SHOWTIME.id}`).flush(null, { status: 204, statusText: 'No Content' });
+      sync(fixture);
+
+      expect(fixture.nativeElement.querySelector('.alert')).toBeNull();
+    });
+  });
+
   it('toasts the message of the API when it refuses the showtime for another reason', () => {
     const fixture = loaded([]);
     const component = fixture.componentInstance;
