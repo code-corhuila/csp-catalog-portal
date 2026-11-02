@@ -62,6 +62,9 @@ Catalog API through the gateway) promoted from `qa` to `main`.
 
 ### Fixed
 
+- The alert of a room overlap on the billboard screen of the administration no longer stays on the screen: it is
+  cleared when the person edits any field of the form and when a showtime is cancelled, because the slot it refused
+  may be free then (`csp-catalog-portal#82`, found when the screens were exercised against the real services).
 - The nginx comment of `deploy/nginx.conf` says that the lazy chunks of the federation depend on `Access-Control-Allow-Origin` and why
   `location /` sends none, and the README records that the origin is the one of the shell (`csp-catalog-portal#14`).
 - `tsconfig.federation.json` is saved as UTF-8 without a byte order mark, which strict parsers reject
