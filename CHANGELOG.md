@@ -31,6 +31,8 @@ and is tagged `v<version>` once it is merged.
 
 ### Fixed
 
+- `tsconfig.federation.json` is saved as UTF-8 without a byte order mark, which strict parsers reject
+  (`csp-catalog-portal#10`). The header of `.env.example` was already corrected.
 - The container healthcheck, in `deploy/Dockerfile` and in `deploy/compose.yml`, calls `http://127.0.0.1/health` instead of
   `http://localhost/health`: inside the container `localhost` resolves first to `::1` while nginx listens on IPv4 only, so the
   container showed `unhealthy` although it served traffic. What `/health` verifies does not change (Q-012 and TD-025 of
