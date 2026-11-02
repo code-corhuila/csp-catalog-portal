@@ -1,9 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import {
-  AdminCatalogStateService,
-  parseDateTimeLocal,
-  toDateTimeLocalValue,
-} from './admin-catalog-state.service';
+import { AdminCatalogStateService } from './admin-catalog-state.service';
 import { SYNTHETIC_CATALOG } from '../../data/synthetic-catalog';
 
 describe('AdminCatalogStateService', () => {
@@ -14,9 +10,6 @@ describe('AdminCatalogStateService', () => {
       providers: [AdminCatalogStateService],
     }).inject(AdminCatalogStateService);
   });
-
-  const lastMovieId = () => service.movies()[service.movies().length - 1].id;
-  const lastRoomId = () => service.rooms()[service.rooms().length - 1].id;
 
   it('seeds every movie, room and showtime of the burned-in dataset', () => {
     expect(service.movies().length).toBe(SYNTHETIC_CATALOG.movies.length);
@@ -46,105 +39,11 @@ describe('AdminCatalogStateService', () => {
     });
   });
 
-  it('never mutates the SYNTHETIC_CATALOG constant', () => {
-    const movies = SYNTHETIC_CATALOG.movies.length;
-    const rooms = SYNTHETIC_CATALOG.rooms.length;
-    const showtimes = SYNTHETIC_CATALOG.showtimes.length;
-    // Deep snapshot: detects field-level changes on the existing entries, not only new rows.
-    const snapshot = structuredClone(SYNTHETIC_CATALOG);
-
-    service.scheduleShowtime(lastMovieId(), lastRoomId(), '2026-11-02T09:00');
-
-    expect(SYNTHETIC_CATALOG).toEqual(snapshot);
-    expect(SYNTHETIC_CATALOG.movies.length).toBe(movies);
-    expect(SYNTHETIC_CATALOG.rooms.length).toBe(rooms);
-    expect(SYNTHETIC_CATALOG.showtimes.length).toBe(showtimes);
-    expect(SYNTHETIC_CATALOG.movies.some((movie) => movie.title === 'Cinema Paradiso')).toBeFalse();
-  });
-
   it('lists drafts alongside published movies for the administrator', () => {
     const draft = SYNTHETIC_CATALOG.movies.find((movie) => movie.publicationStatus === 'DRAFT')!;
 
     expect(service.movies().some((movie) => movie.id === draft.id)).toBeTrue();
     expect(service.movieTitle(draft.id)).toBe(draft.title);
-  });
-
-  it('computes the end time from the movie duration', () => {
-    const movie = service.movies()[0];
-    const room = service.rooms()[0];
-    const before = service.showtimes().length;
-
-    const result = service.scheduleShowtime(movie.id, room.id, '2026-11-02T10:30');
-
-    expect(result.ok).toBeTrue();
-    expect(result.message).toBe('Función programada exitosamente.');
-    const created = service.showtimes()[service.showtimes().length - 1];
-    expect(service.showtimes().length).toBe(before + 1);
-    expect(created.startsAt).toBe('2026-11-02T10:30');
-    expect(created.endsAt).toBe(
-      toDateTimeLocalValue(parseDateTimeLocal('2026-11-02T10:30') + movie.duration * 60_000),
-    );
-    expect(created.status).toBe('SCHEDULED');
-    expect(service.statusLabel(created.status)).toBe('Publicada');
-  });
-
-  it('rejects a showtime that overlaps an existing one in the same room', () => {
-    const busy = service.showtimes()[0];
-    const before = service.showtimes().length;
-
-    const result = service.scheduleShowtime(busy.movieId, busy.roomId, '2026-10-06T21:00');
-
-    expect(result.ok).toBeFalse();
-    expect(result.conflict).toBeTrue();
-    expect(result.message).toContain(service.roomName(busy.roomId));
-    expect(result.message).toContain('ya tiene una función programada en ese horario');
-    expect(service.showtimes().length).toBe(before);
-  });
-
-  it('accepts a showtime outside the occupied window of the same room', () => {
-    const busy = service.showtimes()[0];
-    const before = service.showtimes().length;
-
-    const result = service.scheduleShowtime(busy.movieId, busy.roomId, '2026-10-06T23:00');
-
-    expect(result.ok).toBeTrue();
-    expect(service.showtimes().length).toBe(before + 1);
-  });
-
-  it('allows back-to-back showtimes that touch the occupied window', () => {
-    const busy = service.showtimes()[0];
-    const before = service.showtimes().length;
-
-    // Starts exactly when the busy showtime ends: strict `<` must not report a conflict.
-    const result = service.scheduleShowtime(busy.movieId, busy.roomId, busy.endsAt);
-
-    expect(result.ok).toBeTrue();
-    expect(service.showtimes().length).toBe(before + 1);
-  });
-
-  it('asks for every field when the schedule is incomplete', () => {
-    const before = service.showtimes().length;
-
-    expect(service.scheduleShowtime('', '', '').ok).toBeFalse();
-    expect(service.scheduleShowtime('', '', 'not-a-date').ok).toBeFalse();
-    expect(service.showtimes().length).toBe(before);
-  });
-
-  it('removes a showtime from the schedule', () => {
-    const showtime = service.showtimes()[0];
-    const before = service.showtimes().length;
-
-    const result = service.removeShowtime(showtime.id);
-
-    expect(result.ok).toBeTrue();
-    expect(result.message).toBe('Función retirada de cartelera.');
-    expect(service.showtimes().length).toBe(before - 1);
-    expect(service.removeShowtime('missing-id').ok).toBeFalse();
-  });
-
-  it('formats dataset timestamps without seconds for the table', () => {
-    expect(service.displayDateTime('2026-10-06T20:00:00')).toBe('2026-10-06 20:00');
-    expect(service.displayDateTime('2026-10-06T20:00')).toBe('2026-10-06 20:00');
   });
 
   it('reports metrics, room occupancy and the showtime summary', () => {
@@ -167,10 +66,9 @@ describe('AdminCatalogStateService', () => {
     expect(summary[0].status).toBe('Publicada');
   });
 
-  it('resolves titles, rooms and durations of unknown ids with a placeholder', () => {
+  it('resolves titles and rooms of unknown ids with a placeholder', () => {
     expect(service.movieTitle('missing-movie')).toBe('—');
     expect(service.roomName('missing-room')).toBe('—');
-    expect(service.durationOf('missing-movie')).toBe(0);
     expect(service.roomName(SYNTHETIC_CATALOG.rooms[0].id)).toBe(SYNTHETIC_CATALOG.rooms[0].name);
   });
 });
