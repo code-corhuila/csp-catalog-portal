@@ -1,188 +1,301 @@
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideRouter } from "@angular/router";
-import { AdminBillboardPageComponent } from "./admin-billboard-page.component";
-import {
-  AdminCatalogStateService,
-  parseDateTimeLocal,
-  toDateTimeLocalValue,
-} from "../data/admin-catalog-state.service";
-import { AdminToastService } from "../data/admin-toast.service";
+import { HttpErrorResponse, HttpInterceptorFn, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
+import { MovieRecord, RoomRecord, ShowtimeRecord } from '../../model/admin';
+import { AdminToastService } from '../data/admin-toast.service';
+import { AdminBillboardPageComponent } from './admin-billboard-page.component';
 
-describe("AdminBillboardPageComponent", () => {
-  const createComponent = () => TestBed.configureTestingModule({
-    imports: [AdminBillboardPageComponent],
-    providers: [provideRouter([])],
-  }).createComponent(AdminBillboardPageComponent);
+const API = '/api/v1/catalog';
+const MOVIES = `${API}/movies`;
+const ROOMS = `${API}/rooms`;
+const SHOWTIMES = `${API}/showtimes`;
 
-  const state = () => TestBed.inject(AdminCatalogStateService);
+const MOVIE: MovieRecord = {
+  id: '0b1f6f0e-0000-4000-8000-0000000000e1',
+  title: 'Interstellar',
+  durationMinutes: 120,
+  classification: '+12',
+  genres: ['Ciencia ficción'],
+  status: 'PUBLISHED',
+};
+const DRAFT: MovieRecord = { ...MOVIE, id: '0b1f6f0e-0000-4000-8000-0000000000e2', title: 'Neon Sky', status: 'DRAFT' };
+const ARCHIVED: MovieRecord = { ...MOVIE, id: '0b1f6f0e-0000-4000-8000-0000000000e3', title: 'Old Reel', status: 'ARCHIVED' };
+const ROOM: RoomRecord = {
+  id: '0b1f6f0e-0000-4000-8000-0000000000f1',
+  name: 'Sala 01 - IMAX',
+  capacity: 48,
+  seats: [{ label: 'A1' }],
+};
+const SHOWTIME: ShowtimeRecord = {
+  id: '0b1f6f0e-0000-4000-8000-0000000000a1',
+  movieId: MOVIE.id,
+  roomId: ROOM.id,
+  startsAt: '2026-11-02T20:00:00Z',
+  endsAt: '2026-11-02T22:00:00Z',
+  priceCents: 1500000,
+  status: 'SCHEDULED',
+};
+const CANCELLED: ShowtimeRecord = { ...SHOWTIME, id: '0b1f6f0e-0000-4000-8000-0000000000a2', status: 'CANCELLED' };
 
-  /** Messages pushed to the bottom-right toast queue of the mockup. */
-  const toasts = () => TestBed.inject(AdminToastService).toasts().map((toast) => toast.message);
+const page = <T>(data: T[]) => ({ data, meta: { page: 1, limit: 100, total: data.length, totalPages: 1 } });
+
+/** What the interceptor of the shell does: a failed request reaches the portal as an ApiError. */
+const asShellError: HttpInterceptorFn = (request, next) =>
+  next(request).pipe(
+    catchError((failure: HttpErrorResponse) =>
+      throwError(() => ({
+        status: failure.status,
+        code: failure.error?.error ?? 'ERROR',
+        message: 'failed',
+        details: [],
+        traceId: 'trace',
+        userMessage: failure.error?.message ?? 'Algo salió mal.',
+      })),
+    ),
+  );
+
+describe('AdminBillboardPageComponent', () => {
+  let http: HttpTestingController;
+
+  const createComponent = () => {
+    TestBed.configureTestingModule({
+      imports: [AdminBillboardPageComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(withInterceptors([asShellError])),
+        provideHttpClientTesting(),
+      ],
+    });
+    http = TestBed.inject(HttpTestingController);
+    return TestBed.createComponent(AdminBillboardPageComponent);
+  };
+
+  /** Messages pushed to the bottom-right toast queue. */
+  const toasts = () => TestBed.inject(AdminToastService).toasts().map(toast => toast.message);
 
   /**
-   * Runs change detection after mutating the component outside of an event
-   * handler: zoneless Angular only refreshes views marked for check, otherwise
-   * dev mode reports NG0100.
+   * Runs change detection after mutating the component outside of an event handler: zoneless Angular only
+   * refreshes views marked for check, otherwise dev mode reports NG0100.
    */
   const sync = <T>(fixture: ComponentFixture<T>) => {
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
   };
 
-  it("renders the page header of the mockup", () => {
+  const answer = (path: string, body: object) => http.expectOne(req => req.url === path).flush(body);
+
+  /** Creates the page and answers the three list requests of its first render. */
+  const loaded = (showtimes: ShowtimeRecord[] = [SHOWTIME, CANCELLED]) => {
     const fixture = createComponent();
     sync(fixture);
+    answer(MOVIES, page([MOVIE, DRAFT, ARCHIVED]));
+    answer(ROOMS, page([ROOM]));
+    answer(SHOWTIMES, page(showtimes));
+    sync(fixture);
+    return fixture;
+  };
+
+  const fillForm = (component: AdminBillboardPageComponent) => {
+    component.onMovieChange(MOVIE.id);
+    component.selectedRoomId = ROOM.id;
+    component.onStartChange('2026-11-02T20:00');
+    component.price = 15000;
+  };
+
+  const rowsOf = (fixture: ComponentFixture<AdminBillboardPageComponent>): HTMLTableRowElement[] =>
+    Array.from(fixture.nativeElement.querySelectorAll('.data-table tbody tr'));
+
+  afterEach(() => http.verify());
+
+  it('renders the page header', () => {
+    const fixture = loaded();
     const content = fixture.nativeElement.textContent;
 
-    expect(content).toContain("Gestión de Cartelera y Funciones");
-    expect(content).toContain("Programa y administra las funciones disponibles del cine.");
+    expect(content).toContain('Gestión de Cartelera y Funciones');
+    expect(content).toContain('Programa y administra las funciones disponibles del cine.');
   });
 
-  it("offers every movie and room in the schedule form", () => {
+  it('offers only the published movies and the rooms of the API in the schedule form', () => {
+    const fixture = loaded();
+
+    const movieSelect: HTMLSelectElement = fixture.nativeElement.querySelector('#movie-select');
+    const roomSelect: HTMLSelectElement = fixture.nativeElement.querySelector('#room-select');
+
+    expect(Array.from(movieSelect.options).map(option => option.textContent?.trim())).toEqual([
+      'Seleccionar película...',
+      'Interstellar (120 min)',
+    ]);
+    expect(Array.from(roomSelect.options).map(option => option.textContent?.trim())).toEqual([
+      'Seleccionar sala...',
+      'Sala 01 - IMAX (48 asientos)',
+    ]);
+  });
+
+  it('asks for the price in Colombian pesos', () => {
+    const fixture = loaded();
+    const price: HTMLInputElement = fixture.nativeElement.querySelector('#showtime-price');
+
+    expect(fixture.nativeElement.querySelector('label[for=showtime-price]').textContent).toContain('Precio (COP)');
+    expect(price.getAttribute('type')).toBe('number');
+    expect(price.required).toBeTrue();
+    expect(price.min).toBe('0');
+  });
+
+  it('lists the showtimes of the API with movie, room, local times, price and status', () => {
+    const fixture = loaded();
+    const rows = rowsOf(fixture);
+    const local = new Date(SHOWTIME.startsAt);
+    const pad = (value: number) => String(value).padStart(2, '0');
+
+    expect(rows.length).toBe(2);
+    expect(rows[0].textContent).toContain('Interstellar');
+    expect(rows[0].textContent).toContain('Sala 01 - IMAX');
+    expect(rows[0].textContent).toContain(
+      `${local.getFullYear()}-${pad(local.getMonth() + 1)}-${pad(local.getDate())} ${pad(local.getHours())}:${pad(local.getMinutes())}`,
+    );
+    expect(rows[0].textContent).toContain('$15.000 COP');
+    expect(rows.map(row => row.children[5].textContent?.trim())).toEqual(['Publicada', 'Cancelada']);
+  });
+
+  it('offers to cancel a scheduled showtime and not a cancelled one', () => {
+    const fixture = loaded();
+    const rows = rowsOf(fixture);
+
+    expect(rows[0].querySelector('.btn-danger')?.textContent?.trim()).toBe('Cancelar');
+    expect(rows[1].querySelector('.btn-danger')).toBeNull();
+  });
+
+  it('asks the real API and shows no synthetic showtime while it loads', () => {
     const fixture = createComponent();
     sync(fixture);
 
-    const movieSelect: HTMLSelectElement = fixture.nativeElement.querySelector("#movie-select");
-    const roomSelect: HTMLSelectElement = fixture.nativeElement.querySelector("#room-select");
-
-    expect(movieSelect.options.length).toBe(state().movies().length + 1);
-    expect(roomSelect.options.length).toBe(state().rooms().length + 1);
-    expect(movieSelect.options[0].textContent).toContain("Seleccionar película...");
-    expect(roomSelect.options[0].textContent).toContain("Seleccionar sala...");
-    expect(Array.from(movieSelect.options).some((option) => option.value === state().movies()[0].id)).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('Cargando funciones…');
+    answer(MOVIES, page([]));
+    answer(ROOMS, page([]));
+    answer(SHOWTIMES, page([]));
+    sync(fixture);
+    expect(fixture.nativeElement.textContent).toContain('No hay funciones programadas.');
   });
 
-  it("lists every scheduled showtime with movie, room, times and status", () => {
+  it('shows the error and retries when the API does not answer', () => {
     const fixture = createComponent();
     sync(fixture);
-    const rows = fixture.nativeElement.querySelectorAll(".data-table tbody tr");
-    const showtime = state().showtimes()[0];
+    answer(MOVIES, page([MOVIE]));
+    answer(ROOMS, page([ROOM]));
+    http
+      .expectOne(req => req.url === SHOWTIMES)
+      .flush({ error: 'SERVICE_UNAVAILABLE', message: 'Servicio no disponible.' }, { status: 503, statusText: 'x' });
+    sync(fixture);
 
-    expect(rows.length).toBe(state().showtimes().length);
-    expect(rows[0].textContent).toContain(state().movieTitle(showtime.movieId));
-    expect(rows[0].textContent).toContain(state().roomName(showtime.roomId));
-    expect(rows[0].textContent).toContain("2026-10-06 20:00");
-    expect(rows[0].querySelector(".status-tag").textContent.trim()).toBe("Publicada");
-    expect(rows[0].querySelector(".btn-danger").textContent.trim()).toBe("Eliminar");
+    expect(fixture.nativeElement.textContent).toContain('Servicio no disponible.');
+    fixture.nativeElement.querySelector('tbody button').click();
+    answer(SHOWTIMES, page([SHOWTIME]));
+    sync(fixture);
+
+    expect(rowsOf(fixture).length).toBe(1);
   });
 
-  it("shows the empty state when no function is scheduled", () => {
-    const fixture = createComponent();
-    state().showtimes.set([]);
-    sync(fixture);
-
-    expect(fixture.nativeElement.textContent).toContain("No hay funciones programadas.");
-  });
-
-  it("calculates the end time from the selected movie duration", async () => {
-    const fixture = createComponent();
-    sync(fixture);
-    // NgForm wires every NgModel of the <form> on a microtask.
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    sync(fixture);
-
+  it('computes the end time from the duration of the movie', () => {
+    const fixture = loaded();
     const component = fixture.componentInstance;
-    const movie = state().movies()[0];
 
-    const movieSelect: HTMLSelectElement = fixture.nativeElement.querySelector("#movie-select");
-    movieSelect.value = movie.id;
-    movieSelect.dispatchEvent(new Event("change"));
+    fillForm(component);
 
-    const startInput: HTMLInputElement = fixture.nativeElement.querySelector("#start-time");
-    startInput.value = "2026-11-01T10:00";
-    startInput.dispatchEvent(new Event("input"));
-    sync(fixture);
-
-    // NgModel writes the model back into the DOM on a resolved promise.
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    sync(fixture);
-
-    const expected = toDateTimeLocalValue(parseDateTimeLocal("2026-11-01T10:00") + movie.duration * 60_000);
-    const endInput: HTMLInputElement = fixture.nativeElement.querySelector("#end-time");
-
-    expect(component.selectedMovieId).toBe(movie.id);
-    expect(component.startTime).toBe("2026-11-01T10:00");
-    expect(component.endTime).toBe(expected);
-    expect(endInput.value).toBe(expected);
-    expect(endInput.readOnly).toBeTrue();
+    expect(component.endTime).toBe('2026-11-02T22:00');
   });
 
-  it("publishes a function, adds its row and toasts the confirmation", () => {
-    const fixture = createComponent();
-    sync(fixture);
+  it('schedules a showtime, resets the form and toasts the confirmation', () => {
+    const fixture = loaded([]);
     const component = fixture.componentInstance;
-    const before = state().showtimes().length;
 
-    component.selectedMovieId = state().movies()[0].id;
-    component.selectedRoomId = state().rooms()[0].id;
-    component.startTime = "2026-11-02T09:00";
+    fillForm(component);
     component.schedule();
+    const request = http.expectOne(SHOWTIMES);
+    expect(request.request.body.priceCents).toBe(1500000);
+    request.flush(SHOWTIME, { status: 201, statusText: 'Created' });
     sync(fixture);
 
-    const rows = fixture.nativeElement.querySelectorAll(".data-table tbody tr");
-    expect(state().showtimes().length).toBe(before + 1);
-    expect(rows.length).toBe(before + 1);
-    expect(toasts()).toContain("Función programada exitosamente.");
-    expect(component.selectedMovieId).toBe("");
-    expect(component.startTime).toBe("");
-    expect(component.alertMessage).toBe("");
+    expect(rowsOf(fixture).length).toBe(1);
+    expect(toasts()).toContain('Función programada exitosamente.');
+    expect(component.selectedMovieId).toBe('');
+    expect(component.price).toBeNull();
+    expect(component.alertMessage).toBe('');
   });
 
-  it("shows the conflict alert and an error toast when the room is already busy", () => {
-    const fixture = createComponent();
+  it('asks for every field without calling the API', () => {
+    const fixture = loaded();
+
+    fixture.componentInstance.schedule();
     sync(fixture);
+
+    http.expectNone(SHOWTIMES);
+    expect(toasts()).toContain('Completa todos los campos.');
+  });
+
+  it('shows the overlap of the room that the API refuses as a conflict next to the form', () => {
+    const fixture = loaded([]);
     const component = fixture.componentInstance;
-    const busy = state().showtimes()[0];
-    const before = state().showtimes().length;
 
-    component.selectedMovieId = state().movies()[0].id;
-    component.selectedRoomId = busy.roomId;
-    component.startTime = "2026-10-06T21:00";
+    fillForm(component);
     component.schedule();
+    http
+      .expectOne(SHOWTIMES)
+      .flush(
+        { error: 'CONFLICT', message: 'La sala ya tiene una función en ese horario.' },
+        { status: 409, statusText: 'x' },
+      );
     sync(fixture);
 
-    const alert: HTMLElement | null = fixture.nativeElement.querySelector(".alert");
-    expect(state().showtimes().length).toBe(before);
-    expect(component.alertMessage).toContain("ya tiene una función programada en ese horario");
-    expect(alert).not.toBeNull();
-    expect(alert!.textContent).toContain("ya tiene una función programada en ese horario");
-    expect(toasts()).toContain("Conflicto detectado en la programación.");
+    expect(fixture.nativeElement.querySelector('.alert').textContent).toContain(
+      'La sala ya tiene una función en ese horario.',
+    );
+    expect(toasts()).toContain('Conflicto detectado en la programación.');
+    expect(component.selectedMovieId).toBe(MOVIE.id);
   });
 
-  it("asks for every field when the schedule is incomplete", () => {
-    const fixture = createComponent();
-    sync(fixture);
+  it('toasts the message of the API when it refuses the showtime for another reason', () => {
+    const fixture = loaded([]);
     const component = fixture.componentInstance;
-    const before = state().showtimes().length;
 
+    fillForm(component);
     component.schedule();
+    http
+      .expectOne(SHOWTIMES)
+      .flush(
+        { error: 'BUSINESS_RULE_VIOLATION', message: 'La película no está publicada.' },
+        { status: 422, statusText: 'x' },
+      );
     sync(fixture);
 
-    expect(state().showtimes().length).toBe(before);
-    expect(component.alertMessage).toBe("");
-    expect(fixture.nativeElement.querySelector(".alert")).toBeNull();
-    expect(toasts()).toContain("Completa todos los campos.");
+    expect(toasts()).toContain('La película no está publicada.');
+    expect(fixture.nativeElement.querySelector('.alert')).toBeNull();
   });
 
-  it("removes a showtime from the table", () => {
-    const fixture = createComponent();
-    sync(fixture);
-    const before = state().showtimes().length;
+  it('cancels a showtime and shows it as cancelled without an action', () => {
+    const fixture = loaded();
 
-    fixture.nativeElement.querySelector("tbody .btn-danger").click();
+    (rowsOf(fixture)[0].querySelector('.btn-danger') as HTMLButtonElement).click();
+    http.expectOne(`${SHOWTIMES}/${SHOWTIME.id}`).flush(null, { status: 204, statusText: 'No Content' });
     sync(fixture);
 
-    expect(state().showtimes().length).toBe(before - 1);
-    expect(fixture.nativeElement.querySelectorAll(".data-table tbody tr").length).toBe(before - 1);
-    expect(toasts()).toContain("Función retirada de cartelera.");
+    const row = rowsOf(fixture)[0];
+    expect(row.children[5].textContent?.trim()).toBe('Cancelada');
+    expect(row.querySelector('.btn-danger')).toBeNull();
+    expect(toasts()).toContain('Función cancelada.');
   });
 
-  it("does not show auth buttons (the shell owns authentication)", () => {
-    const fixture = createComponent();
-    sync(fixture);
-    const content = fixture.nativeElement.textContent;
+  it('toasts the message of the API when it refuses to cancel the showtime', () => {
+    const fixture = loaded();
 
-    expect(content).not.toContain("Iniciar sesión");
-    expect(content).not.toContain("Registrarse");
+    (rowsOf(fixture)[0].querySelector('.btn-danger') as HTMLButtonElement).click();
+    http
+      .expectOne(`${SHOWTIMES}/${SHOWTIME.id}`)
+      .flush({ error: 'CONFLICT', message: 'La función ya terminó.' }, { status: 409, statusText: 'x' });
+    sync(fixture);
+
+    expect(toasts()).toContain('La función ya terminó.');
+    expect(rowsOf(fixture)[0].children[5].textContent?.trim()).toBe('Publicada');
   });
 });
