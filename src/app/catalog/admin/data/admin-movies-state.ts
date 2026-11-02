@@ -1,0 +1,127 @@
+import { Injectable, inject, signal } from '@angular/core';
+import { EMPTY, Observable, catchError, expand, map, of, reduce, tap } from 'rxjs';
+import { ApiError, asApiError } from '../../../shell-contract';
+import { CatalogAdminApiService, newIdempotencyKey } from '../../data/catalog-admin-api.service';
+import { CreateMovieRequest, MovieRecord } from '../../model/admin';
+import { AdminResult } from './admin-catalog-state.service';
+
+export type MoviesStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+/** What the administrator typed in the form; a blank poster is left out. */
+export interface NewMovieInput {
+  title: string;
+  genre: string;
+  duration: number | null;
+  classification: string;
+  synopsis: string;
+  poster: string;
+}
+
+/** The Catalog service answers at most 100 movies per page. */
+const PAGE_LIMIT = 100;
+
+function toRequest(input: NewMovieInput): CreateMovieRequest | null {
+  const title = input.title.trim();
+  const genre = input.genre.trim();
+  const synopsis = input.synopsis.trim();
+  const poster = input.poster.trim();
+
+  if (!title || !genre || !input.duration || input.duration < 1 || !input.classification || !synopsis) {
+    return null;
+  }
+  return {
+    title,
+    synopsis,
+    durationMinutes: Math.trunc(input.duration),
+    classification: input.classification,
+    genres: [genre],
+    status: 'PUBLISHED',
+    ...(poster ? { posterUrl: poster } : {}),
+  };
+}
+
+/**
+ * The movies of the administration screen, read from and written to the real Catalog service (HU-FE-CATALOG-001
+ * administration slice, csp-catalog-portal#82). It never falls back to synthetic data: a failure is shown as a failure.
+ *
+ * Each write has an Idempotency-Key. A retry of the same write reuses it, so the service answers the original
+ * result instead of doing the write twice; a changed movie takes a new key, because the service answers 409 when a
+ * key comes with another payload.
+ */
+@Injectable({ providedIn: 'root' })
+export class AdminMoviesState {
+  private readonly api = inject(CatalogAdminApiService);
+  private attempt: { signature: string; key: string } | null = null;
+  private readonly archiveKeys = new Map<string, string>();
+
+  readonly movies = signal<MovieRecord[]>([]);
+  readonly status = signal<MoviesStatus>('idle');
+  readonly error = signal<ApiError | null>(null);
+
+  /** Every movie, drafts and archived ones included, asking page after page. */
+  load(): void {
+    this.status.set('loading');
+    this.error.set(null);
+    this.api.movies
+      .list({ page: 1, limit: PAGE_LIMIT })
+      .pipe(
+        expand(result =>
+          result.meta.page < result.meta.totalPages
+            ? this.api.movies.list({ page: result.meta.page + 1, limit: PAGE_LIMIT })
+            : EMPTY,
+        ),
+        reduce((all, result) => [...all, ...result.data], [] as MovieRecord[]),
+      )
+      .subscribe({
+        next: movies => {
+          this.movies.set(movies);
+          this.status.set('ready');
+        },
+        error: (failure: unknown) => {
+          this.error.set(asApiError(failure));
+          this.status.set('error');
+        },
+      });
+  }
+
+  create(input: NewMovieInput): Observable<AdminResult> {
+    const body = toRequest(input);
+    if (body === null) {
+      return of({ ok: false, message: 'Completa todos los campos de la película.' });
+    }
+
+    const signature = JSON.stringify(body);
+    if (this.attempt?.signature !== signature) {
+      this.attempt = { signature, key: newIdempotencyKey() };
+    }
+    return this.api.movies.create(body, this.attempt.key).pipe(
+      tap(created => {
+        this.movies.update(list => [...list, created]);
+        this.attempt = null;
+      }),
+      map((): AdminResult => ({ ok: true, message: 'Película guardada correctamente.' })),
+      catchError((failure: unknown) => of(this.refused(failure))),
+    );
+  }
+
+  /** Archives the movie: the service keeps it, and the list shows it as archived. */
+  archive(movieId: string): Observable<AdminResult> {
+    const key = this.archiveKeys.get(movieId) ?? newIdempotencyKey();
+    this.archiveKeys.set(movieId, key);
+
+    return this.api.movies.remove(movieId, key).pipe(
+      tap(() => {
+        this.movies.update(list =>
+          list.map(movie => (movie.id === movieId ? { ...movie, status: 'ARCHIVED' as const } : movie)),
+        );
+        this.archiveKeys.delete(movieId);
+      }),
+      map((): AdminResult => ({ ok: true, message: 'Película archivada.' })),
+      catchError((failure: unknown) => of(this.refused(failure))),
+    );
+  }
+
+  private refused(failure: unknown): AdminResult {
+    return { ok: false, message: asApiError(failure).userMessage };
+  }
+}
