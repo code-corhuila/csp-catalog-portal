@@ -8,6 +8,12 @@ and is tagged `v<version>` once it is merged.
 
 ## [Unreleased]
 
+### Fixed
+
+- The alert of a room overlap on the billboard screen of the administration no longer stays on the screen: it is
+  cleared when the person edits any field of the form and when a showtime is cancelled, because the slot it refused
+  may be free then (`csp-catalog-portal#82`, found when the screens were exercised against the real services).
+
 ### Added
 
 - The billboard and showtimes screen of the administration reads and writes the real Catalog API

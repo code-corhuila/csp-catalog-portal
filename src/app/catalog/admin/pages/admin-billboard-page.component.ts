@@ -57,7 +57,14 @@ const STATUS_LABELS: Record<string, string> = {
 
             <div class="form-group">
               <label class="form-label" for="room-select">Sala</label>
-              <select id="room-select" class="form-control" name="room" required [(ngModel)]="selectedRoomId">
+              <select
+                id="room-select"
+                class="form-control"
+                name="room"
+                required
+                [ngModel]="selectedRoomId"
+                (ngModelChange)="onRoomChange($event)"
+              >
                 <option value="">Seleccionar sala...</option>
                 @for (room of rooms.rooms(); track room.id) {
                   <option [value]="room.id">{{ room.name }} ({{ room.capacity ?? room.seats.length }} asientos)</option>
@@ -101,7 +108,8 @@ const STATUS_LABELS: Record<string, string> = {
                 placeholder="Ej. 15000"
                 min="0"
                 required
-                [(ngModel)]="price"
+                [ngModel]="price"
+                (ngModelChange)="onPriceChange($event)"
               />
             </div>
 
@@ -218,12 +226,24 @@ export class AdminBillboardPageComponent implements OnInit {
 
   onMovieChange(value: string): void {
     this.selectedMovieId = value;
+    this.alertMessage = '';
     this.recalculateEndTime();
+  }
+
+  onRoomChange(value: string): void {
+    this.selectedRoomId = value;
+    this.alertMessage = '';
   }
 
   onStartChange(value: string): void {
     this.startTime = value;
+    this.alertMessage = '';
     this.recalculateEndTime();
+  }
+
+  onPriceChange(value: number | null): void {
+    this.price = value;
+    this.alertMessage = '';
   }
 
   recalculateEndTime(): void {
@@ -258,6 +278,7 @@ export class AdminBillboardPageComponent implements OnInit {
   cancelShowtime(showtimeId: string): void {
     this.state.cancel(showtimeId).subscribe((result) => {
       if (result.ok) {
+        this.alertMessage = '';
         this.toasts.success(result.message);
       } else {
         this.toasts.error(result.message);
