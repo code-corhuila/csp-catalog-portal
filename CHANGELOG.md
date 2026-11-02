@@ -8,8 +8,20 @@ and is tagged `v<version>` once it is merged.
 
 ## [Unreleased]
 
+### Fixed
+
+- The alert of a room overlap on the billboard screen of the administration no longer stays on the screen: it is
+  cleared when the person edits any field of the form and when a showtime is cancelled, because the slot it refused
+  may be free then (`csp-catalog-portal#82`, found when the screens were exercised against the real services).
+
 ### Added
 
+- The billboard and showtimes screen of the administration reads and writes the real Catalog API
+  (`csp-catalog-portal#82`, fourth delivery, second part, which completes the screens): it lists the showtimes with
+  their price and status, schedules one for a published movie in a room with the price in Colombian pesos, and cancels
+  one. The overlap of a room is the 409 of the service, shown next to the form, and the times are shown in local time.
+  The movie and room lists of the form come from the real API too. Only the mock reports screen stays synthetic, as
+  the contract has no reports route.
 - `AdminShowtimesState`: the showtimes of the administration read from and written to the real Catalog API
   (`csp-catalog-portal#82`, fourth delivery, first part): it lists every showtime, schedules one with the price in
   Colombian pesos sent as cents (Rule 2026-B) and the times sent in UTC, flags the 409 of a room overlap as a conflict, and
