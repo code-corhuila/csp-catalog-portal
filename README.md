@@ -55,6 +55,8 @@ starts (ADR-026) and refuses to start without it:
 |---|---|---|
 | `CORS_ALLOWED_ORIGIN_REGEX` | Origins allowed to load `remoteEntry.json` and the modules of the portal | `^http://localhost:420[0-5]$` |
 
+The origin is the one of the shell (`csp-front`, on port 4200 in development): the variable has the same name and the same value in the shell and in every portal of an environment (ADR-026), so a `qa` or `main` deployment sets the origin of its own shell and not the development default.
+
 `CORS_ALLOWED_ORIGIN_REGEX` **must be a fully anchored regular expression (`^…$`)**: nginx matches
 the pattern against the whole `Origin` header, and an unanchored value would also accept any
 origin that merely contains it (for example `http://localhost:4200.evil.example`).
