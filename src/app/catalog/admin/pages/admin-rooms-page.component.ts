@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ADMIN_SHARED_STYLES } from '../admin-layout.component';
-import { AdminCatalogStateService } from '../data/admin-catalog-state.service';
+import { AdminRoomsState } from '../data/admin-rooms-state';
 import { AdminToastService } from '../data/admin-toast.service';
 
 @Component({
@@ -67,20 +67,33 @@ import { AdminToastService } from '../data/admin-toast.service';
                 @for (room of state.rooms(); track room.id) {
                   <tr>
                     <td><strong>{{ room.name }}</strong></td>
-                    <td>{{ room.seatLabels.length }} asientos</td>
+                    <td>{{ room.capacity ?? room.seats.length }} asientos</td>
                     <td>
                       <button
                         type="button"
                         class="btn btn-danger btn-compact"
-                        (click)="removeRoom(room.id)"
+                        (click)="archiveRoom(room.id)"
                       >
-                        Eliminar
+                        Archivar
                       </button>
                     </td>
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="3" class="empty-cell">No hay salas registradas.</td>
+                    @switch (state.status()) {
+                      @case ('loading') {
+                        <td colspan="3" class="empty-cell">Cargando salas…</td>
+                      }
+                      @case ('error') {
+                        <td colspan="3" class="empty-cell">
+                          {{ state.error()?.userMessage }}
+                          <button type="button" class="btn btn-compact" (click)="state.load()">Reintentar</button>
+                        </td>
+                      }
+                      @default {
+                        <td colspan="3" class="empty-cell">No hay salas registradas.</td>
+                      }
+                    }
                   </tr>
                 }
               </tbody>
@@ -92,8 +105,8 @@ import { AdminToastService } from '../data/admin-toast.service';
   `,
   styles: [ADMIN_SHARED_STYLES],
 })
-export class AdminRoomsPageComponent {
-  readonly state = inject(AdminCatalogStateService);
+export class AdminRoomsPageComponent implements OnInit {
+  readonly state = inject(AdminRoomsState);
   readonly toasts = inject(AdminToastService);
 
   readonly draft = {
@@ -101,24 +114,29 @@ export class AdminRoomsPageComponent {
     capacity: null as number | null,
   };
 
-  saveRoom(): void {
-    const result = this.state.addRoom(this.draft.name, this.draft.capacity ?? 0);
-
-    if (result.ok) {
-      this.draft.name = '';
-      this.draft.capacity = null;
-      this.toasts.success(result.message);
-    } else {
-      this.toasts.error(result.message);
-    }
+  ngOnInit(): void {
+    this.state.load();
   }
 
-  removeRoom(roomId: string): void {
-    const result = this.state.removeRoom(roomId);
-    if (result.ok) {
-      this.toasts.success(result.message);
-    } else {
-      this.toasts.error(result.message);
-    }
+  saveRoom(): void {
+    this.state.create({ ...this.draft }).subscribe(result => {
+      if (result.ok) {
+        this.draft.name = '';
+        this.draft.capacity = null;
+        this.toasts.success(result.message);
+      } else {
+        this.toasts.error(result.message);
+      }
+    });
+  }
+
+  archiveRoom(roomId: string): void {
+    this.state.archive(roomId).subscribe(result => {
+      if (result.ok) {
+        this.toasts.success(result.message);
+      } else {
+        this.toasts.error(result.message);
+      }
+    });
   }
 }
