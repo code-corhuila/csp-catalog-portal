@@ -31,6 +31,8 @@ and is tagged `v<version>` once it is merged.
 
 ### Fixed
 
+- The nginx comment of `deploy/nginx.conf` says that the lazy chunks of the federation depend on `Access-Control-Allow-Origin` and why
+  `location /` sends none, and the README records that the origin is the one of the shell (`csp-catalog-portal#14`).
 - `tsconfig.federation.json` is saved as UTF-8 without a byte order mark, which strict parsers reject
   (`csp-catalog-portal#10`). The header of `.env.example` was already corrected.
 - The container healthcheck, in `deploy/Dockerfile` and in `deploy/compose.yml`, calls `http://127.0.0.1/health` instead of
