@@ -51,22 +51,6 @@ const STATUS_LABELS: Record<Showtime['status'], string> = {
   COMPLETED: 'Finalizada',
 };
 
-/** Accepts both `yyyy-MM-ddTHH:mm` and `yyyy-MM-ddTHH:mm:ss` and parses it as local time. */
-export function parseDateTimeLocal(value: string): number {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return Number.NaN;
-  }
-  return Date.parse(trimmed.length === 16 ? `${trimmed}:00` : trimmed);
-}
-
-/** Formats a timestamp back to the `datetime-local` value format. */
-export function toDateTimeLocalValue(timestamp: number): string {
-  const date = new Date(timestamp);
-  const pad = (value: number): string => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 @Injectable({ providedIn: 'root' })
 export class AdminCatalogStateService {
 readonly movies = signal<AdminMovie[]>(
@@ -136,84 +120,7 @@ readonly movies = signal<AdminMovie[]>(
     return this.rooms().find((room) => room.id === roomId)?.name ?? '—';
   }
 
-  durationOf(movieId: string): number {
-    return this.movies().find((movie) => movie.id === movieId)?.duration ?? 0;
-  }
-
   statusLabel(status: Showtime['status']): string {
     return STATUS_LABELS[status];
   }
-
-  /** Mockup renders `2026-10-06 20:00`, without the seconds of the burned-in dataset. */
-  displayDateTime(value: string): string {
-    return value.slice(0, 16).replace('T', ' ');
-  }
-
-  scheduleShowtime(movieId: string, roomId: string, startsAt: string): AdminResult {
-    const movie = this.movies().find((item) => item.id === movieId);
-    const room = this.rooms().find((item) => item.id === roomId);
-
-    if (!movie || !room || !startsAt.trim()) {
-      return { ok: false, message: 'Completa todos los campos.' };
-    }
-
-    const start = parseDateTimeLocal(startsAt);
-    if (Number.isNaN(start)) {
-      return { ok: false, message: 'Completa todos los campos.' };
-    }
-
-    const end = start + movie.duration * 60_000;
-
-    const hasConflict = this.showtimes().some((showtime) => {
-      if (showtime.roomId !== roomId) {
-        return false;
-      }
-      const existingStart = parseDateTimeLocal(showtime.startsAt);
-      const existingEnd = parseDateTimeLocal(showtime.endsAt);
-      return start < existingEnd && end > existingStart;
-    });
-
-    if (hasConflict) {
-      return {
-        ok: false,
-        conflict: true,
-        message: `Error: La ${room.name} ya tiene una función programada en ese horario.`,
-      };
-    }
-
-    const showtime: AdminShowtime = {
-      id: this.newId(),
-      movieId,
-      roomId,
-      startsAt: toDateTimeLocalValue(start),
-      endsAt: toDateTimeLocalValue(end),
-      status: 'SCHEDULED',
-    };
-
-    this.showtimes.update((list) => [...list, showtime]);
-    return { ok: true, message: 'Función programada exitosamente.' };
-  }
-
-  removeShowtime(showtimeId: string): AdminResult {
-    const exists = this.showtimes().some((showtime) => showtime.id === showtimeId);
-    if (!exists) {
-      return { ok: false, message: 'La función no existe.' };
-    }
-
-    this.showtimes.update((list) => list.filter((showtime) => showtime.id !== showtimeId));
-    return { ok: true, message: 'Función retirada de cartelera.' };
-  }
-
-  private hasScheduledShowtimes(predicate: (showtime: AdminShowtime) => boolean): boolean {
-    return this.showtimes().some(predicate);
-  }
-
-  private newId(): string {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-      return crypto.randomUUID();
-    }
-    return `admin-${Date.now().toString(16)}-${(this.idCounter += 1).toString(16)}`;
-  }
-
-  private idCounter = 0;
 }
