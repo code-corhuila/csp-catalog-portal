@@ -53,7 +53,6 @@ describe('AdminCatalogStateService', () => {
     // Deep snapshot: detects field-level changes on the existing entries, not only new rows.
     const snapshot = structuredClone(SYNTHETIC_CATALOG);
 
-    service.addRoom('Sala 02 - VIP', 40);
     service.scheduleShowtime(lastMovieId(), lastRoomId(), '2026-11-02T09:00');
 
     expect(SYNTHETIC_CATALOG).toEqual(snapshot);
@@ -68,51 +67,6 @@ describe('AdminCatalogStateService', () => {
 
     expect(service.movies().some((movie) => movie.id === draft.id)).toBeTrue();
     expect(service.movieTitle(draft.id)).toBe(draft.title);
-  });
-
-  it('creates a room with seat labels in rows of eight', () => {
-    const before = service.rooms().length;
-
-    const result = service.addRoom('  Sala 02 - VIP  ', 20.4);
-
-    expect(result.ok).toBeTrue();
-    expect(result.message).toBe('Sala registrada exitosamente.');
-    expect(service.rooms().length).toBe(before + 1);
-    const room = service.rooms()[service.rooms().length - 1];
-    expect(room.name).toBe('Sala 02 - VIP');
-    expect(room.seatLabels.length).toBe(20);
-    expect(room.seatLabels[0]).toBe('A1');
-    expect(room.seatLabels[19]).toBe('C4');
-  });
-
-  it('rejects a room without a name or a positive capacity', () => {
-    const before = service.rooms().length;
-
-    expect(service.addRoom('   ', 120).ok).toBeFalse();
-    expect(service.addRoom('Sala 03', 0).ok).toBeFalse();
-    expect(service.rooms().length).toBe(before);
-  });
-
-  it('does not delete a room that has scheduled showtimes', () => {
-    const room = SYNTHETIC_CATALOG.rooms[0];
-    const before = service.rooms().length;
-
-    const result = service.removeRoom(room.id);
-
-    expect(result.ok).toBeFalse();
-    expect(result.message).toBe('No se puede eliminar una sala que tiene funciones programadas.');
-    expect(service.rooms().length).toBe(before);
-  });
-
-  it('deletes a room without showtimes', () => {
-    service.addRoom('Sala 02 - VIP', 40);
-    const before = service.rooms().length;
-
-    const result = service.removeRoom(lastRoomId());
-
-    expect(result.ok).toBeTrue();
-    expect(result.message).toBe('Sala eliminada.');
-    expect(service.rooms().length).toBe(before - 1);
   });
 
   it('computes the end time from the movie duration', () => {

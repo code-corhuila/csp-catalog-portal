@@ -67,16 +67,6 @@ export function toDateTimeLocalValue(timestamp: number): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-/** Seats are laid out in rows of eight: A1..A8, B1..B8, and so on. */
-function buildSeatLabels(capacity: number): string[] {
-  const labels: string[] = [];
-  for (let index = 0; index < capacity; index += 1) {
-    const row = String.fromCharCode(65 + Math.floor(index / 8));
-    labels.push(`${row}${(index % 8) + 1}`);
-  }
-  return labels;
-}
-
 @Injectable({ providedIn: 'root' })
 export class AdminCatalogStateService {
 readonly movies = signal<AdminMovie[]>(
@@ -157,36 +147,6 @@ readonly movies = signal<AdminMovie[]>(
   /** Mockup renders `2026-10-06 20:00`, without the seconds of the burned-in dataset. */
   displayDateTime(value: string): string {
     return value.slice(0, 16).replace('T', ' ');
-  }
-
-  addRoom(name: string, capacity: number): AdminResult {
-    const roomName = name.trim();
-    if (!roomName || !capacity || capacity < 1) {
-      return { ok: false, message: 'Ingresa un nombre y una capacidad válidos.' };
-    }
-
-    const room: AdminRoom = {
-      id: this.newId(),
-      name: roomName,
-      seatLabels: buildSeatLabels(Math.trunc(capacity)),
-    };
-
-    this.rooms.update((list) => [...list, room]);
-    return { ok: true, message: 'Sala registrada exitosamente.' };
-  }
-
-  removeRoom(roomId: string): AdminResult {
-    const room = this.rooms().find((item) => item.id === roomId);
-    if (!room) {
-      return { ok: false, message: 'La sala no existe.' };
-    }
-
-    if (this.hasScheduledShowtimes((showtime) => showtime.roomId === roomId)) {
-      return { ok: false, message: 'No se puede eliminar una sala que tiene funciones programadas.' };
-    }
-
-    this.rooms.update((list) => list.filter((item) => item.id !== roomId));
-    return { ok: true, message: 'Sala eliminada.' };
   }
 
   scheduleShowtime(movieId: string, roomId: string, startsAt: string): AdminResult {

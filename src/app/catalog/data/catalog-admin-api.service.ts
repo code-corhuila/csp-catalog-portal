@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { EMPTY, Observable, expand, reduce } from 'rxjs';
 import {
   CreateMovieRequest,
   CreateRoomRequest,
@@ -19,6 +19,31 @@ export function newIdempotencyKey(): string {
   return crypto.randomUUID();
 }
 
+/**
+ * The keys of the writes that may be retried. A write keeps its key until it succeeds, so a retry makes the service
+ * answer the original result instead of doing the write twice; another write takes its own key, because the service
+ * answers 409 when a key comes with another payload.
+ */
+export class RetryKeys {
+  private readonly keys = new Map<string, string>();
+
+  keyFor(write: string): string {
+    let key = this.keys.get(write);
+    if (key === undefined) {
+      key = newIdempotencyKey();
+      this.keys.set(write, key);
+    }
+    return key;
+  }
+
+  release(write: string): void {
+    this.keys.delete(write);
+  }
+}
+
+/** The Catalog service answers at most 100 records per page. */
+const PAGE_LIMIT = 100;
+
 function withKey(key: string): { headers: HttpHeaders } {
   return { headers: new HttpHeaders({ 'Idempotency-Key': key }) };
 }
@@ -35,6 +60,18 @@ export class AdminResource<T, Create, Update> {
     if (query.page !== undefined) params = params.set('page', query.page);
     if (query.limit !== undefined) params = params.set('limit', query.limit);
     return this.http.get<Page<T>>(this.path, { params });
+  }
+
+  /** Every record, asking page after page. */
+  listAll(): Observable<T[]> {
+    return this.list({ page: 1, limit: PAGE_LIMIT }).pipe(
+      expand(result =>
+        result.meta.page < result.meta.totalPages
+          ? this.list({ page: result.meta.page + 1, limit: PAGE_LIMIT })
+          : EMPTY,
+      ),
+      reduce((all, result) => [...all, ...result.data], [] as T[]),
+    );
   }
 
   get(id: string): Observable<T> {
