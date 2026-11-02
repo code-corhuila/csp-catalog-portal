@@ -30,15 +30,6 @@ export interface AdminResult {
   conflict?: boolean;
 }
 
-export interface NewMovieInput {
-  title: string;
-  genre: string;
-  duration: number | null;
-  classification: string;
-  synopsis: string;
-  trailer: string;
-}
-
 export interface RoomOccupancy {
   id: string;
   name: string;
@@ -166,45 +157,6 @@ readonly movies = signal<AdminMovie[]>(
   /** Mockup renders `2026-10-06 20:00`, without the seconds of the burned-in dataset. */
   displayDateTime(value: string): string {
     return value.slice(0, 16).replace('T', ' ');
-  }
-
-  addMovie(input: NewMovieInput): AdminResult {
-    const title = input.title.trim();
-    const synopsis = input.synopsis.trim();
-    const trailer = input.trailer.trim();
-    const genre = input.genre.trim();
-
-    if (!title || !genre || !input.duration || input.duration < 1 || !input.classification || !synopsis || !trailer) {
-      return { ok: false, message: 'Completa todos los campos de la película.' };
-    }
-
-    const movie: AdminMovie = {
-      id: this.newId(),
-      title,
-      duration: Math.trunc(input.duration),
-      genres: [genre],
-      publicationStatus: 'PUBLISHED',
-      description: synopsis,
-      trailerUrl: trailer,
-      classification: input.classification,
-    };
-
-    this.movies.update((list) => [...list, movie]);
-    return { ok: true, message: 'Película guardada correctamente.' };
-  }
-
-  removeMovie(movieId: string): AdminResult {
-    const movie = this.movies().find((item) => item.id === movieId);
-    if (!movie) {
-      return { ok: false, message: 'La película no existe.' };
-    }
-
-    if (this.hasScheduledShowtimes((showtime) => showtime.movieId === movieId)) {
-      return { ok: false, message: 'No se puede eliminar una película que tiene funciones programadas.' };
-    }
-
-    this.movies.update((list) => list.filter((item) => item.id !== movieId));
-    return { ok: true, message: 'Película eliminada.' };
   }
 
   addRoom(name: string, capacity: number): AdminResult {
