@@ -1,11 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { EMPTY, Observable, catchError, expand, map, of, reduce, tap } from 'rxjs';
+import { Observable, catchError, map, of, tap } from 'rxjs';
 import { ApiError, asApiError } from '../../../shell-contract';
-import { CatalogAdminApiService, newIdempotencyKey } from '../../data/catalog-admin-api.service';
+import { CatalogAdminApiService, RetryKeys } from '../../data/catalog-admin-api.service';
 import { CreateMovieRequest, MovieRecord } from '../../model/admin';
 import { AdminResult } from './admin-catalog-state.service';
 
-export type MoviesStatus = 'idle' | 'loading' | 'ready' | 'error';
+/** The state of a list read from the service. */
+export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 /** What the administrator typed in the form; a blank poster is left out. */
 export interface NewMovieInput {
@@ -16,9 +17,6 @@ export interface NewMovieInput {
   synopsis: string;
   poster: string;
 }
-
-/** The Catalog service answers at most 100 movies per page. */
-const PAGE_LIMIT = 100;
 
 function toRequest(input: NewMovieInput): CreateMovieRequest | null {
   const title = input.title.trim();
@@ -51,27 +49,18 @@ function toRequest(input: NewMovieInput): CreateMovieRequest | null {
 @Injectable({ providedIn: 'root' })
 export class AdminMoviesState {
   private readonly api = inject(CatalogAdminApiService);
-  private attempt: { signature: string; key: string } | null = null;
-  private readonly archiveKeys = new Map<string, string>();
+  private readonly keys = new RetryKeys();
 
   readonly movies = signal<MovieRecord[]>([]);
-  readonly status = signal<MoviesStatus>('idle');
+  readonly status = signal<LoadStatus>('idle');
   readonly error = signal<ApiError | null>(null);
 
-  /** Every movie, drafts and archived ones included, asking page after page. */
+  /** Every movie, drafts and archived ones included. */
   load(): void {
     this.status.set('loading');
     this.error.set(null);
     this.api.movies
-      .list({ page: 1, limit: PAGE_LIMIT })
-      .pipe(
-        expand(result =>
-          result.meta.page < result.meta.totalPages
-            ? this.api.movies.list({ page: result.meta.page + 1, limit: PAGE_LIMIT })
-            : EMPTY,
-        ),
-        reduce((all, result) => [...all, ...result.data], [] as MovieRecord[]),
-      )
+      .listAll()
       .subscribe({
         next: movies => {
           this.movies.set(movies);
@@ -90,14 +79,11 @@ export class AdminMoviesState {
       return of({ ok: false, message: 'Completa todos los campos de la película.' });
     }
 
-    const signature = JSON.stringify(body);
-    if (this.attempt?.signature !== signature) {
-      this.attempt = { signature, key: newIdempotencyKey() };
-    }
-    return this.api.movies.create(body, this.attempt.key).pipe(
+    const write = `create:${JSON.stringify(body)}`;
+    return this.api.movies.create(body, this.keys.keyFor(write)).pipe(
       tap(created => {
         this.movies.update(list => [...list, created]);
-        this.attempt = null;
+        this.keys.release(write);
       }),
       map((): AdminResult => ({ ok: true, message: 'Película guardada correctamente.' })),
       catchError((failure: unknown) => of(this.refused(failure))),
@@ -106,15 +92,13 @@ export class AdminMoviesState {
 
   /** Archives the movie: the service keeps it, and the list shows it as archived. */
   archive(movieId: string): Observable<AdminResult> {
-    const key = this.archiveKeys.get(movieId) ?? newIdempotencyKey();
-    this.archiveKeys.set(movieId, key);
-
-    return this.api.movies.remove(movieId, key).pipe(
+    const write = `archive:${movieId}`;
+    return this.api.movies.remove(movieId, this.keys.keyFor(write)).pipe(
       tap(() => {
         this.movies.update(list =>
           list.map(movie => (movie.id === movieId ? { ...movie, status: 'ARCHIVED' as const } : movie)),
         );
-        this.archiveKeys.delete(movieId);
+        this.keys.release(write);
       }),
       map((): AdminResult => ({ ok: true, message: 'Película archivada.' })),
       catchError((failure: unknown) => of(this.refused(failure))),

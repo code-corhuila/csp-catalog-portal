@@ -15,6 +15,12 @@ Catalog API through the gateway) promoted from `qa` to `main`.
 
 ### Added
 
+- The rooms screen of the administration reads and writes the real Catalog API (`csp-catalog-portal#82`, third
+  delivery): it lists the rooms, creates a room with its seats laid out in rows of eight (at most 500, as the service
+  accepts) and archives a room, which leaves the list as the service excludes it from `GET /rooms`; a name already in use
+  shows the message of the API. Writes carry an `Idempotency-Key` that a retry reuses (`RetryKeys`), and the service
+  gets `listAll()` to read every page, which the movies state now uses too. The delete action is now Archive. The
+  showtimes and billboard screens are still synthetic.
 - The movies screen of the administration reads and writes the real Catalog API (`csp-catalog-portal#82`, second
   delivery): it lists every movie with its status, creates a published movie and archives a movie (the service keeps it),
   with an `Idempotency-Key` that a retry of the same write reuses, a loading state, and the message of the API when it

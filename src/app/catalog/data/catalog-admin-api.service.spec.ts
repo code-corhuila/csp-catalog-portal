@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { AdminResource, CatalogAdminApiService, newIdempotencyKey } from './catalog-admin-api.service';
+import { AdminResource, CatalogAdminApiService, RetryKeys, newIdempotencyKey } from './catalog-admin-api.service';
 
 const BASE = '/api/v1/catalog';
 const ID = '0b1f6f0e-0000-4000-8000-000000000001';
@@ -50,6 +50,20 @@ describe('CatalogAdminApiService', () => {
         const request = http.expectOne(target().path);
         expect(request.request.params.keys().length).toBe(0);
         request.flush({ data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } });
+      });
+
+      it('lists every record, asking the next page while there are more', () => {
+        let all: unknown[] = [];
+        target().resource.listAll().subscribe(records => (all = records));
+
+        const first = http.expectOne(req => req.url === target().path && req.params.get('page') === '1');
+        expect(first.request.params.get('limit')).toBe('100');
+        first.flush({ data: [{ id: 'a' }], meta: { page: 1, limit: 100, total: 2, totalPages: 2 } });
+        http
+          .expectOne(req => req.url === target().path && req.params.get('page') === '2')
+          .flush({ data: [{ id: 'b' }], meta: { page: 2, limit: 100, total: 2, totalPages: 2 } });
+
+        expect(all).toEqual([{ id: 'a' }, { id: 'b' }]);
       });
 
       it('gets one record by its id', () => {
@@ -105,6 +119,19 @@ describe('CatalogAdminApiService', () => {
       });
     });
   }
+
+  describe('RetryKeys', () => {
+    it('gives the same key to the same write until it is released, and its own key to another write', () => {
+      const keys = new RetryKeys();
+
+      const first = keys.keyFor('create:a');
+      expect(keys.keyFor('create:a')).toBe(first);
+      expect(keys.keyFor('create:b')).not.toBe(first);
+
+      keys.release('create:a');
+      expect(keys.keyFor('create:a')).not.toBe(first);
+    });
+  });
 
   describe('newIdempotencyKey', () => {
     it('gives a different key of 8 to 128 characters each time', () => {
