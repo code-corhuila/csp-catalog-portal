@@ -15,6 +15,11 @@ Catalog API through the gateway) promoted from `qa` to `main`.
 
 ### Added
 
+- `AdminShowtimesState`: the showtimes of the administration read from and written to the real Catalog API
+  (`csp-catalog-portal#82`, fourth delivery, first part): it lists every showtime, schedules one with the price in
+  Colombian pesos sent as cents (Rule 2026-B) and the times sent in UTC, flags the 409 of a room overlap as a conflict, and
+  cancels a showtime, which the service keeps as cancelled. Nothing uses it yet: the next delivery moves the billboard
+  screen to it.
 - The rooms screen of the administration reads and writes the real Catalog API (`csp-catalog-portal#82`, third
   delivery): it lists the rooms, creates a room with its seats laid out in rows of eight (at most 500, as the service
   accepts) and archives a room, which leaves the list as the service excludes it from `GET /rooms`; a name already in use
