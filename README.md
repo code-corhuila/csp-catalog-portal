@@ -76,7 +76,9 @@ The API has no route for one movie: the detail takes the movie that the billboar
 direct URL, from the upcoming showtimes of the movie, so a movie with none is shown as not available. Neither screen reads
 the synthetic dataset or falls back to it: an error is shown as an error with a retry.
 
-Still synthetic: the seat map (its source for clients depends on Booking) and the administration view.
+Still synthetic: the seat map (its source for clients depends on Booking) and the administration view, which moves
+to the real API one screen at a time (`csp-catalog-portal#82`): the movies screen is real; the rooms, showtimes and
+billboard screens are not yet.
 
 ## HU-FE-CATALOG-001 synthetic data
 
@@ -116,7 +118,7 @@ and are exposed to the shell as a **second entry point**, `./admin-routes`, expo
 | Address | Page | Source of the design |
 |---|---|---|
 | `/admin/billboard` | `AdminBillboardPageComponent` — schedule a showtime (auto end time, room conflict alert) and list/delete the scheduled ones | mockup § CARTELERA |
-| `/admin/movies` | `AdminMoviesPageComponent` — create/delete movies (title, genre, duration, classification, synopsis, trailer) | mockup § PELÍCULAS |
+| `/admin/movies` | `AdminMoviesPageComponent` — list, create and archive the movies of the real Catalog API (title, genre, duration, classification, synopsis, optional poster) | mockup § PELÍCULAS |
 | `/admin/rooms` | `AdminRoomsPageComponent` — create/delete rooms with their seat capacity | mockup § SALAS |
 | `/admin/reports` | `AdminReportsPageComponent` — headline metrics, room occupancy and showtime summary (mock only) | mockup § REPORTES |
 
@@ -127,8 +129,9 @@ and are exposed to the shell as a **second entry point**, `./admin-routes`, expo
 - **Navigation**: the screens render their own section sub-nav with the `Admin` badge. The brand
   header and the footer belong to the shell (and to `AppComponent` when standalone), so the portal
   never duplicates them.
-- **Data**: `AdminCatalogStateService` seeds a mutable copy of `SYNTHETIC_CATALOG` for the session.
-  The constant itself is never modified: the public billboard, the seat map and the 40 original unit
-  tests keep reading the frozen dataset. No `HttpClient` is involved.
+- **Data**: the movies come from `AdminMoviesState`, which reads and writes the real Catalog API through
+  `CatalogAdminApiService` (an `Idempotency-Key` on every write, an error shown as an error, never the synthetic
+  data). The rooms and the showtimes still come from `AdminCatalogStateService`, which seeds a mutable copy of
+  `SYNTHETIC_CATALOG` for the session; the constant itself is never modified.
 - **Feedback**: `AdminToastService` drives the success/error toasts of the mockup (3.5 s each).
 

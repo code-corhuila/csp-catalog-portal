@@ -10,6 +10,11 @@ and is tagged `v<version>` once it is merged.
 
 ### Added
 
+- The movies screen of the administration reads and writes the real Catalog API (`csp-catalog-portal#82`, second
+  delivery): it lists every movie with its status, creates a published movie and archives a movie (the service keeps it),
+  with an `Idempotency-Key` that a retry of the same write reuses, a loading state, and the message of the API when it
+  refuses. The trailer field is replaced by an optional poster, as the contract has no trailer, and the delete action
+  is now Archive. The rooms, showtimes and billboard screens are still synthetic.
 - `CatalogAdminApiService`: typed calls to the administration routes of the Catalog service (`/movies`, `/rooms` and
   `/showtimes` of `catalog-service.yaml` 1.10.0: list, get, create, update with PATCH and archive or cancel with DELETE),
   with the `Idempotency-Key` that each write needs and `newIdempotencyKey()`. Nothing uses it yet: the administration
