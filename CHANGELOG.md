@@ -60,6 +60,12 @@ Catalog API through the gateway) promoted from `qa` to `main`.
   the shell, send only the filters that have a value, set no header and let every error reach the caller. Nothing uses it
   yet: the billboard page and the movie detail follow in their own pull requests.
 
+### Removed
+
+- The synthetic seat map (`/showtimes/:showtimeId/seats`) and `SyntheticCatalogDataService`: nothing linked to them since the
+  billboard and the movie detail send the client to the seat map of the Booking portal (`/booking/showtime/:showtimeId`,
+  `csp-booking-api`). The mock reports screen keeps its synthetic dataset (HU-FE-CATALOG-002).
+
 ### Fixed
 
 - The alert of a room overlap on the billboard screen of the administration no longer stays on the screen: it is
