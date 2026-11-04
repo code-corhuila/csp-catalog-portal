@@ -76,29 +76,18 @@ The API has no route for one movie: the detail takes the movie that the billboar
 direct URL, from the upcoming showtimes of the movie, so a movie with none is shown as not available. Neither screen reads
 the synthetic dataset or falls back to it: an error is shown as an error with a retry.
 
-Still synthetic: the seat map (its source for clients depends on Booking) and the reports of the administration view, which moved
+Still synthetic: the reports of the administration view, which moved
 to the real API one screen at a time (`csp-catalog-portal#82`): the movies, rooms and showtimes screens are real; only the
 mock reports screen stays synthetic (the contract has no reports route).
 
-## HU-FE-CATALOG-001 synthetic data
+## Synthetic data of the reports
 
-The Catalog portal exercises the seat-map flow and the administration view with a typed local dataset
-under `src/app/catalog/data/`. `SyntheticCatalogDataService` is the ADR-022 data boundary for
-this Cut 2 slice: it does not use `HttpClient` or a backend and filters `DRAFT` movies before
-the billboard renders. The dataset includes 5 published movies (`The Silent Reel`, `Interstellar`,
-`Oppenheimer`, `The Dark Knight`, `Avatar: The Way of Water`) and 1 draft movie (`Neon Sky`),
-one room (`Room 1`) with **48 seats distributed in 6 rows × 8 columns: A1 through F8**.
-Seat availability is deterministic demo data: `A1` is unavailable for the synthetic showtime so the
-UI can render both states. It is not a reservation model and must be replaced by the Catalog
-availability response when the backend integration is introduced.
-Showtimes and seats linked to `DRAFT` movies are excluded by the same service boundary, including
-when a user navigates directly to a showtime URL.
+The mock reports screen of the administration view (`/admin/reports`) is the only part of the portal that reads a typed
+local dataset, `SYNTHETIC_CATALOG` under `src/app/catalog/data/`, through `AdminCatalogStateService`: the contract has
+no reports route. The seat map is not a screen of this portal: the client chooses seats in the Booking portal
+(`/booking/showtime/:showtimeId`, `csp-booking-api`), and the synthetic seat map that the portal had in Cut 2 was removed.
 
-### Cut 2 — Seat Map & Showtime Configuration
-
-#### Seat Map
-- **48 seats** distributed in 6 rows × 8 columns: **A1–F8**
-- A1: occupied (demo), A2–F8: available
+### Showtime configuration
 
 #### Showtime IDs
 - All `showtimeId` are **UUID v4** for compatibility with Booking API
@@ -108,7 +97,6 @@ when a user navigates directly to a showtime URL.
 - Catalog exposes billboard and detail at `/movies/:id`
 - **Seat selection → Booking portal** at `/booking/showtime/:showtimeId`
 - Catalog **does not** implement hold/reservation (that is HU-FE-BOOKING-001)
-- Showtime DRAFT (`bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb`) does not expose seat map
 
 ## Administration view (`/admin/*`)
 
