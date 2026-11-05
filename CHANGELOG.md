@@ -6,6 +6,80 @@ All notable changes of `csp-catalog-portal` are recorded here. The format follow
 re-applied with `git cherry-pick -x` (numerals 6.2.3, 10 and 11 of the course norm); it reaches `main` by pull request, never by merging `qa`,
 and is tagged `v<version>` once it is merged.
 
+## [Unreleased]
+
+## [3.0.0] - 2026-10-22
+
+Release 3.0.0 of the catalog portal, aligned with the 3.0.0 of the platform: HU-FE-CATALOG-002 (the portal reads the real
+Catalog API through the gateway) promoted from `qa` to `main`.
+
+### Added
+
+- The billboard and showtimes screen of the administration reads and writes the real Catalog API
+  (`csp-catalog-portal#82`, fourth delivery, second part, which completes the screens): it lists the showtimes with
+  their price and status, schedules one for a published movie in a room with the price in Colombian pesos, and cancels
+  one. The overlap of a room is the 409 of the service, shown next to the form, and the times are shown in local time.
+  The movie and room lists of the form come from the real API too. Only the mock reports screen stays synthetic, as
+  the contract has no reports route.
+- `AdminShowtimesState`: the showtimes of the administration read from and written to the real Catalog API
+  (`csp-catalog-portal#82`, fourth delivery, first part): it lists every showtime, schedules one with the price in
+  Colombian pesos sent as cents (Rule 2026-B) and the times sent in UTC, flags the 409 of a room overlap as a conflict, and
+  cancels a showtime, which the service keeps as cancelled. Nothing uses it yet: the next delivery moves the billboard
+  screen to it.
+- The rooms screen of the administration reads and writes the real Catalog API (`csp-catalog-portal#82`, third
+  delivery): it lists the rooms, creates a room with its seats laid out in rows of eight (at most 500, as the service
+  accepts) and archives a room, which leaves the list as the service excludes it from `GET /rooms`; a name already in use
+  shows the message of the API. Writes carry an `Idempotency-Key` that a retry reuses (`RetryKeys`), and the service
+  gets `listAll()` to read every page, which the movies state now uses too. The delete action is now Archive. The
+  showtimes and billboard screens are still synthetic.
+- The movies screen of the administration reads and writes the real Catalog API (`csp-catalog-portal#82`, second
+  delivery): it lists every movie with its status, creates a published movie and archives a movie (the service keeps it),
+  with an `Idempotency-Key` that a retry of the same write reuses, a loading state, and the message of the API when it
+  refuses. The trailer field is replaced by an optional poster, as the contract has no trailer, and the delete action
+  is now Archive. The rooms, showtimes and billboard screens are still synthetic.
+- `CatalogAdminApiService`: typed calls to the administration routes of the Catalog service (`/movies`, `/rooms` and
+  `/showtimes` of `catalog-service.yaml` 1.10.0: list, get, create, update with PATCH and archive or cancel with DELETE),
+  with the `Idempotency-Key` that each write needs and `newIdempotencyKey()`. Nothing uses it yet: the administration
+  screens still read the synthetic data and move to it one resource at a time (`csp-catalog-portal#82`).
+- The movie detail reads the real Catalog API (HU-FE-CATALOG-002): it takes the movie that the billboard passes in the
+  navigation state or, on a direct URL, from the upcoming showtimes of the movie (`GET /billboard?movieId=`), links each
+  showtime to its booking, and shows the loading, not available and error states with a retry; the trailer and the rating
+  of the synthetic dataset are gone. The README says what is real and what is still synthetic (the seat map and the
+  administration view).
+- The billboard page reads the real Catalog API (HU-FE-CATALOG-002): a search form (text, genre with the genres seen as
+  suggestions, maximum duration), twelve movies per page with pagination, the upcoming showtimes of each movie linked to its
+  booking, and the loading, empty and error states with a retry, through `BillboardSearchState`. It no longer reads the
+  synthetic dataset and never falls back to it. The movie detail and the seat map still read the synthetic dataset.
+- `BillboardSearchState` (HU-FE-CATALOG-002): the state of the billboard search with signals for the filters (text, genre,
+  maximum duration), the page of published movies, the upcoming showtimes of those movies (asked four movies at a time),
+  the loading, empty and error states with retry, and the genres seen so far as suggestions. A new request cancels the
+  previous one and an error is shown as an error, never replaced by synthetic data. Nothing uses it yet: the billboard
+  page follows.
+- `CatalogApiService` and the models of the public reads of the Catalog service (HU-FE-CATALOG-002): `getBillboard` and
+  `searchMovies` call `GET /api/v1/catalog/billboard` and `GET /api/v1/catalog/billboard/movies` through the HttpClient of
+  the shell, send only the filters that have a value, set no header and let every error reach the caller. Nothing uses it
+  yet: the billboard page and the movie detail follow in their own pull requests.
+
+### Removed
+
+- The synthetic seat map (`/showtimes/:showtimeId/seats`) and `SyntheticCatalogDataService`: nothing linked to them since the
+  billboard and the movie detail send the client to the seat map of the Booking portal (`/booking/showtime/:showtimeId`,
+  `csp-booking-api`). The mock reports screen keeps its synthetic dataset (HU-FE-CATALOG-002).
+
+### Fixed
+
+- The alert of a room overlap on the billboard screen of the administration no longer stays on the screen: it is
+  cleared when the person edits any field of the form and when a showtime is cancelled, because the slot it refused
+  may be free then (`csp-catalog-portal#82`, found when the screens were exercised against the real services).
+- The nginx comment of `deploy/nginx.conf` says that the lazy chunks of the federation depend on `Access-Control-Allow-Origin` and why
+  `location /` sends none, and the README records that the origin is the one of the shell (`csp-catalog-portal#14`).
+- `tsconfig.federation.json` is saved as UTF-8 without a byte order mark, which strict parsers reject
+  (`csp-catalog-portal#10`). The header of `.env.example` was already corrected.
+- The container healthcheck, in `deploy/Dockerfile` and in `deploy/compose.yml`, calls `http://127.0.0.1/health` instead of
+  `http://localhost/health`: inside the container `localhost` resolves first to `::1` while nginx listens on IPv4 only, so the
+  container showed `unhealthy` although it served traffic. What `/health` verifies does not change (Q-012 and TD-025 of
+  `csp-docs`, ADR-026 amendment of 2026-10-13, code-corhuila/csp-catalog-portal#64).
+
 ## [2.0.1] - 2026-10-13
 
 Patch release of Cut 2: the infrastructure fixes that align the portal's container with

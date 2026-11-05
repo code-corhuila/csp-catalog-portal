@@ -13,8 +13,4 @@ export const CATALOG_ROUTES: Routes = [
     path: 'movies/:movieId',
     loadComponent: () => import('./pages/movie-detail-page.component').then(m => m.MovieDetailPageComponent),
   },
-  {
-    path: 'showtimes/:showtimeId/seats',
-    loadComponent: () => import('./pages/seat-map-page.component').then(m => m.SeatMapPageComponent),
-  },
 ];

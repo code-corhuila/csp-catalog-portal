@@ -1,63 +1,80 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.service';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ApiError, asApiError } from '../../shell-contract';
+import { CatalogApiService } from '../data/catalog-api.service';
+import { BillboardMovie, BillboardShowtime } from '../model/billboard';
 
 @Component({
   selector: 'app-movie-detail-page',
   standalone: true,
   imports: [DatePipe, RouterLink],
   template: `
-    @if (movie; as currentMovie) {
-      <main class="detail-shell">
-        <section class="detail-card">
-          <div class="inner-content">
-            <a class="back-link" routerLink="../">← Volver a la cartelera</a>
+    @switch (status()) {
+      @case ('loading') {
+        <p class="status-message" role="status">Cargando película…</p>
+      }
+      @case ('error') {
+        <div class="error-state" role="alert">
+          <p>{{ error()?.userMessage }}</p>
+          <button type="button" class="retry" (click)="load()">Reintentar</button>
+        </div>
+      }
+      @case ('unavailable') {
+        <main class="detail-shell">
+          <p role="alert">Película no disponible: no está publicada o no tiene funciones próximas.</p>
+          <a class="back-link" routerLink="../">← Volver a la cartelera</a>
+        </main>
+      }
+      @case ('ready') {
+        @if (movie(); as currentMovie) {
+          <main class="detail-shell">
+            <section class="detail-card">
+              <div class="inner-content">
+                <a class="back-link" routerLink="../">← Volver a la cartelera</a>
 
-            <!-- Banner con imagen de fondo y botón de YouTube -->
-            <div 
-              class="trailer-container"
-              [style.background-image]="'url(' + (currentMovie.imageUrl || '') + ')'"
-            >
-              <div class="trailer-overlay">
-                <a 
-                  [href]="currentMovie.trailerUrl" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  class="trailer-btn"
-                >
-                  <span class="play-icon">▶</span>
-                  <span>Reproducir Tráiler en YouTube</span>
-                </a>
+                <div
+                  class="banner"
+                  [style.background-image]="currentMovie.posterUrl ? 'url(' + currentMovie.posterUrl + ')' : ''"
+                ></div>
+
+                <div class="detail-content">
+                  <p class="eyebrow">{{ eyebrow(currentMovie) }}</p>
+                  <h2>{{ currentMovie.title }}</h2>
+                  <p class="metadata">{{ currentMovie.durationMinutes }} minutos</p>
+                  <p class="description">
+                    {{ currentMovie.synopsis || 'Disfruta de esta película seleccionada en la cartelera de CineSync. Elige tu función disponible y reserva tus asientos.' }}
+                  </p>
+
+                  <h3>Horarios Disponibles:</h3>
+                  @switch (showtimesStatus()) {
+                    @case ('loading') {
+                      <p class="showtime-note">Cargando funciones…</p>
+                    }
+                    @case ('failed') {
+                      <p class="showtime-note">No se pudieron cargar las funciones</p>
+                    }
+                    @default {
+                      <ul class="showtime-grid">
+                        @for (showtime of showtimes(); track showtime.id) {
+                          <li>
+                            <a class="showtime-button" [routerLink]="['/booking/showtime', showtime.id]">
+                              {{ showtime.startsAt | date: 'EEE d MMM, h:mm a' }}
+                            </a>
+                          </li>
+                        } @empty {
+                          <li class="showtime-note">Sin funciones próximas</li>
+                        }
+                      </ul>
+                    }
+                  }
+                </div>
               </div>
-            </div>
-
-            <div class="detail-content">
-              <p class="eyebrow">
-                {{ currentMovie.genres?.join(' · ') }}{{ currentMovie.rating != null ? ' · Rating: ★ ' + currentMovie.rating : '' }}
-              </p>
-              <h2>{{ currentMovie.title }}</h2>
-              <p class="metadata">{{ currentMovie.durationMinutes }} minutos · Publicada</p>
-              <p class="description">
-                {{ currentMovie.description || 'Disfruta de esta película seleccionada en la cartelera de CineSync. Elige tu función disponible y reserva tus asientos.' }}
-              </p>
-              
-              <h3>Horarios Disponibles:</h3>
-              <ul class="showtime-grid">
-                @for (showtime of showtimes; track showtime.id) {
-                  <li>
-                    <a class="showtime-button" [routerLink]="['/booking/showtime', showtime.id]">
-                      {{ showtime.startsAt | date: 'shortTime' }}
-                    </a>
-                  </li>
-                }
-              </ul>
-            </div>
-          </div>
-        </section>
-      </main>
-    } @else {
-      <p role="alert">Película no encontrada.</p>
+            </section>
+          </main>
+        }
+      }
     }
   `,
   styles: [`
@@ -89,7 +106,7 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
     .back-link { color: #38BDF8; display: inline-block; font-weight: 700; margin-bottom: 24px; text-decoration: none; }
     .back-link:hover { text-decoration: underline; }
 
-    .trailer-container {
+    .banner {
       width: 100%;
       height: 320px;
       background-size: cover;
@@ -103,58 +120,10 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
       border: 1px solid rgba(255, 255, 255, .08);
     }
 
-    .trailer-overlay {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle, rgba(11, 13, 23, 0.3) 0%, rgba(11, 13, 23, 0.8) 100%);
-    }
-
-    .trailer-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      background: rgba(15, 18, 30, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #FFFFFF;
-      padding: 12px 24px;
-      border-radius: 30px;
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 0.95rem;
-      backdrop-filter: blur(8px);
-      transition: all 0.25s ease;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    }
-
-    .trailer-btn:hover {
-      background: #8B5CF6;
-      border-color: #A78BFA;
-      transform: scale(1.05);
-      box-shadow: 0 0 25px rgba(139, 92, 246, 0.6);
-    }
-
-    .play-icon {
-      background: #8B5CF6;
-      color: white;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85rem;
-      padding-left: 2px;
-    }
-
-    .trailer-btn:hover .play-icon {
-      background: white;
-      color: #8B5CF6;
-    }
-
     .detail-content { padding-top: 28px; }
+    .status-message, .showtime-note { color: #94A3B8; font-size: 0.9rem; }
+    .status-message, .error-state { text-align: center; padding: 48px 0; }
+    .retry { background: rgba(139, 92, 246, 0.15); color: #C084FC; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 8px; font-weight: 700; padding: 10px 16px; cursor: pointer; }
     .eyebrow { color: #38BDF8; font-size: .85rem; font-weight: 700; margin: 0 0 8px 0; }
     h2 { font-size: 2.2rem; font-weight: 900; letter-spacing: -.03em; margin: 0 0 12px 0; }
     h3 { margin: 28px 0 16px; font-size: 1.1rem; font-weight: 800; color: #F1F5F9; }
@@ -166,12 +135,59 @@ import { SyntheticCatalogDataService } from '../data/synthetic-catalog-data.serv
     .showtime-button:hover { background: #38BDF8; color: #071018; border-color: #38BDF8; }
   `],
 })
-export class MovieDetailPageComponent {
-  private readonly route = inject(ActivatedRoute);
-  private readonly catalog = inject(SyntheticCatalogDataService);
+export class MovieDetailPageComponent implements OnInit {
+  private readonly api = inject(CatalogApiService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly movieId = inject(ActivatedRoute).snapshot.paramMap.get('movieId') ?? '';
 
-  readonly movie = this.catalog.getMovie(
-    this.route.snapshot.paramMap.get('id') ?? this.route.snapshot.paramMap.get('movieId') ?? ''
-  );
-  readonly showtimes = this.catalog.getShowtimes(this.movie?.id);
+  readonly movie = signal<BillboardMovie | null>(null);
+  readonly showtimes = signal<BillboardShowtime[]>([]);
+  readonly status = signal<'loading' | 'ready' | 'unavailable' | 'error'>('loading');
+  readonly showtimesStatus = signal<'loading' | 'ready' | 'failed'>('loading');
+  readonly error = signal<ApiError | null>(null);
+
+  constructor() {
+    // The billboard passes the movie it already has, so the page can show it before the showtimes arrive.
+    const passed = inject(Router).getCurrentNavigation()?.extras.state?.['movie'] as BillboardMovie | undefined;
+    if (passed?.id === this.movieId) {
+      this.movie.set(passed);
+      this.status.set('ready');
+    }
+  }
+
+  ngOnInit(): void {
+    this.load();
+  }
+
+  /** The API has no route for one movie: its upcoming showtimes carry the movie, so a movie with none is not available. */
+  load(): void {
+    this.error.set(null);
+    this.showtimesStatus.set('loading');
+    if (this.movie() === null) {
+      this.status.set('loading');
+    }
+    this.api
+      .getBillboard({ movieId: this.movieId, limit: 100 })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: page => {
+          this.showtimes.set(page.data.map(item => item.showtime));
+          this.showtimesStatus.set('ready');
+          const known = page.data[0]?.movie ?? this.movie();
+          this.movie.set(known);
+          this.status.set(known === null ? 'unavailable' : 'ready');
+        },
+        error: (failure: unknown) => {
+          this.showtimesStatus.set('failed');
+          if (this.movie() === null) {
+            this.error.set(asApiError(failure));
+            this.status.set('error');
+          }
+        },
+      });
+  }
+
+  eyebrow(movie: BillboardMovie): string {
+    return [...(movie.genres ?? []), movie.classification].join(' · ');
+  }
 }

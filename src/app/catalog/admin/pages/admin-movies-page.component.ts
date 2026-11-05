@@ -1,11 +1,16 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ADMIN_SHARED_STYLES } from '../admin-layout.component';
-import { AdminCatalogStateService } from '../data/admin-catalog-state.service';
+import { AdminMoviesState } from '../data/admin-movies-state';
 import { AdminToastService } from '../data/admin-toast.service';
 
 const GENRES = ['Ciencia ficción', 'Acción', 'Terror', 'Animación', 'Suspenso', 'Aventura'];
 const RATINGS = ['TP', '+7', '+12', '+16', '+18'];
+const STATUS_LABELS: Record<string, string> = {
+  PUBLISHED: 'Publicada',
+  DRAFT: 'Borrador',
+  ARCHIVED: 'Archivada',
+};
 
 @Component({
   selector: 'app-admin-movies-page',
@@ -97,15 +102,14 @@ const RATINGS = ['TP', '+7', '+12', '+16', '+18'];
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="new-movie-trailer">Enlace del Tráiler (YouTube/URL)</label>
+              <label class="form-label" for="new-movie-poster">Enlace del Póster (opcional)</label>
               <input
                 type="url"
-                id="new-movie-trailer"
+                id="new-movie-poster"
                 class="form-control"
-                name="trailer"
-                placeholder="https://www.youtube.com/watch?v=..."
-                required
-                [(ngModel)]="draft.trailer"
+                name="poster"
+                placeholder="https://..."
+                [(ngModel)]="draft.poster"
               />
             </div>
 
@@ -124,7 +128,7 @@ const RATINGS = ['TP', '+7', '+12', '+16', '+18'];
                   <th>Género</th>
                   <th>Duración</th>
                   <th>Clasificación</th>
-                  <th>Tráiler</th>
+                  <th>Estado</th>
                   <th>Acción</th>
                 </tr>
               </thead>
@@ -132,36 +136,40 @@ const RATINGS = ['TP', '+7', '+12', '+16', '+18'];
                 @for (movie of state.movies(); track movie.id) {
                   <tr>
                     <td><strong>{{ movie.title }}</strong></td>
-                    <td>{{ movie.genres.join(' · ') || 'N/A' }}</td>
-                    <td>{{ movie.duration }} min</td>
+                    <td>{{ movie.genres?.join(' · ') || 'N/A' }}</td>
+                    <td>{{ movie.durationMinutes }} min</td>
                     <td>{{ movie.classification || 'N/A' }}</td>
+                    <td>{{ statusLabel(movie.status) }}</td>
                     <td>
-                      @if (movie.trailerUrl) {
-                        <a
-                          class="btn-link"
-                          [href]="movie.trailerUrl"
-                          target="_blank"
-                          rel="noopener noreferrer"
+                      @if (movie.status !== 'ARCHIVED') {
+                        <button
+                          type="button"
+                          class="btn btn-danger btn-compact"
+                          (click)="archiveMovie(movie.id)"
                         >
-                          Ver Tráiler
-                        </a>
+                          Archivar
+                        </button>
                       } @else {
-                        <span class="empty-cell">N/A</span>
+                        <span class="empty-cell">—</span>
                       }
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        class="btn btn-danger btn-compact"
-                        (click)="removeMovie(movie.id)"
-                      >
-                        Eliminar
-                      </button>
                     </td>
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="6" class="empty-cell">No hay películas registradas.</td>
+                    @switch (state.status()) {
+                      @case ('loading') {
+                        <td colspan="6" class="empty-cell">Cargando películas…</td>
+                      }
+                      @case ('error') {
+                        <td colspan="6" class="empty-cell">
+                          {{ state.error()?.userMessage }}
+                          <button type="button" class="btn btn-compact" (click)="state.load()">Reintentar</button>
+                        </td>
+                      }
+                      @default {
+                        <td colspan="6" class="empty-cell">No hay películas registradas.</td>
+                      }
+                    }
                   </tr>
                 }
               </tbody>
@@ -173,8 +181,8 @@ const RATINGS = ['TP', '+7', '+12', '+16', '+18'];
   `,
   styles: [ADMIN_SHARED_STYLES],
 })
-export class AdminMoviesPageComponent {
-  readonly state = inject(AdminCatalogStateService);
+export class AdminMoviesPageComponent implements OnInit {
+  readonly state = inject(AdminMoviesState);
   readonly toasts = inject(AdminToastService);
 
   readonly genres = GENRES;
@@ -186,8 +194,16 @@ export class AdminMoviesPageComponent {
     duration: null as number | null,
     classification: '',
     synopsis: '',
-    trailer: '',
+    poster: '',
   };
+
+  ngOnInit(): void {
+    this.state.load();
+  }
+
+  statusLabel(status: string): string {
+    return STATUS_LABELS[status] ?? status;
+  }
 
   ratingLabel(rating: string): string {
     const labels: Record<string, string> = {
@@ -201,23 +217,24 @@ export class AdminMoviesPageComponent {
   }
 
   saveMovie(): void {
-    const result = this.state.addMovie({ ...this.draft });
-
-    if (result.ok) {
-      this.resetDraft();
-      this.toasts.success(result.message);
-    } else {
-      this.toasts.error(result.message);
-    }
+    this.state.create({ ...this.draft }).subscribe(result => {
+      if (result.ok) {
+        this.resetDraft();
+        this.toasts.success(result.message);
+      } else {
+        this.toasts.error(result.message);
+      }
+    });
   }
 
-  removeMovie(movieId: string): void {
-    const result = this.state.removeMovie(movieId);
-    if (result.ok) {
-      this.toasts.success(result.message);
-    } else {
-      this.toasts.error(result.message);
-    }
+  archiveMovie(movieId: string): void {
+    this.state.archive(movieId).subscribe(result => {
+      if (result.ok) {
+        this.toasts.success(result.message);
+      } else {
+        this.toasts.error(result.message);
+      }
+    });
   }
 
   private resetDraft(): void {
@@ -226,6 +243,6 @@ export class AdminMoviesPageComponent {
     this.draft.duration = null;
     this.draft.classification = '';
     this.draft.synopsis = '';
-    this.draft.trailer = '';
+    this.draft.poster = '';
   }
 }
