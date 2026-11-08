@@ -12,12 +12,14 @@ branch and leave through a Pull Request.
 
 ```
 develop  <--PR--  feat/... fix/... chore/...
-qa       <--PR--  qa/...
+qa       <--PR--  qa-promote/...
 main     <--PR--  release/...  hotfix/...
 ```
 
 Promotion happens **by re-application** (`git cherry-pick -x`), never by merging one permanent
 branch into another: `merge develop -> qa` and `merge qa -> main` do not exist in this model.
+A branch named `qa/...` cannot be created while the branch `qa` exists (Git refuses the reference), so the promotion
+branches of this repository are named `qa-promote/<repo>-<description>` (ADR-021).
 
 `main` requires **1 approval from `ariel5253`**. On `develop` and `qa` the team sets its own review
 rule.
