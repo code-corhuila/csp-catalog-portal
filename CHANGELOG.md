@@ -8,6 +8,10 @@ and is tagged `v<version>` once it is merged.
 
 ## [Unreleased]
 
+### Fixed
+
+- The branching section of the README draws the promotion branches as `qa-promote/...` and explains why they are not `qa/...` (ADR-021).
+
 ### Removed
 
 - The synthetic seat map (`/showtimes/:showtimeId/seats`) and `SyntheticCatalogDataService`: nothing linked to them since the
