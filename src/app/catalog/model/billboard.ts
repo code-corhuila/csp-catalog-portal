@@ -1,5 +1,5 @@
 /**
- * What the public reads of the Catalog service answer (catalog-service.yaml 1.8.0, ADR-041 and ADR-044):
+ * What the public reads of the Catalog service answer (catalog-service.yaml 1.11.0, ADR-041, ADR-044 and DEC-015):
  * the public data of a published movie, a room and a scheduled showtime, and the pagination metadata.
  */
 export interface PageMeta {
@@ -22,6 +22,7 @@ export interface BillboardMovie {
   genres?: string[];
   classification: string;
   posterUrl?: string;
+  trailerUrl?: string;
   releaseDate?: string;
 }
 
