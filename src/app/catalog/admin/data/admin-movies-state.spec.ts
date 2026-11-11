@@ -30,6 +30,7 @@ const INPUT: NewMovieInput = {
   classification: 'TP',
   synopsis: ' Un homenaje al cine de barrio. ',
   poster: ' https://example.com/poster.png ',
+  trailer: ' https://example.com/trailer ',
 };
 
 /** What the interceptor of the shell does: a failed request reaches the portal as an ApiError. */
@@ -111,6 +112,7 @@ describe('AdminMoviesState', () => {
         genres: ['Suspenso'],
         status: 'PUBLISHED',
         posterUrl: 'https://example.com/poster.png',
+        trailerUrl: 'https://example.com/trailer',
       });
       expect(request.request.headers.get('Idempotency-Key')).toBeTruthy();
       request.flush(movie(A), { status: 201, statusText: 'Created' });
@@ -127,10 +129,38 @@ describe('AdminMoviesState', () => {
       request.flush(movie(A), { status: 201, statusText: 'Created' });
     });
 
+    it('leaves the trailer out when it is blank', () => {
+      state.create({ ...INPUT, trailer: '  ' }).subscribe();
+
+      const request = http.expectOne(MOVIES);
+      expect('trailerUrl' in request.request.body).toBeFalse();
+      request.flush(movie(A), { status: 201, statusText: 'Created' });
+    });
+
+    it('refuses a trailer that is not an absolute http or https address of at most 2048 characters', () => {
+      const refused = [
+        'javascript:alert(1)',
+        'ftp://example.com/trailer',
+        '/trailer',
+        'not a link',
+        'https://example.com/' + 'a'.repeat(2048),
+      ];
+      for (const trailer of refused) {
+        let result: unknown;
+        state.create({ ...INPUT, trailer }).subscribe(value => (result = value));
+
+        expect(result).toEqual({
+          ok: false,
+          message: 'El enlace del tráiler debe ser una dirección http o https de hasta 2048 caracteres.',
+        });
+      }
+      http.expectNone(MOVIES);
+    });
+
     it('rejects an incomplete movie without calling the API', () => {
       let result: unknown;
       state
-        .create({ title: ' ', genre: '', duration: null, classification: '', synopsis: '', poster: '' })
+        .create({ title: ' ', genre: '', duration: null, classification: '', synopsis: '', poster: '', trailer: '' })
         .subscribe(value => (result = value));
 
       http.expectNone(MOVIES);
