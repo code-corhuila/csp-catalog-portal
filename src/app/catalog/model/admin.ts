@@ -3,7 +3,7 @@ import { Room, Seat } from './room';
 import { Showtime } from './showtime';
 
 /**
- * What the administration routes of the Catalog service accept and answer (catalog-service.yaml 1.10.0):
+ * What the administration routes of the Catalog service accept and answer (catalog-service.yaml 1.11.0):
  * the full records, the create bodies (the record without its id) and the update bodies (any field of it).
  */
 export type MovieRecord = Movie;

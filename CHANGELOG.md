@@ -8,6 +8,14 @@ and is tagged `v<version>` once it is merged.
 
 ## [Unreleased]
 
+### Added
+
+- Trailer link of a movie (`catalog-service.yaml` 1.11.0, DEC-015): the movies form of the administration has an optional
+  "Enlace del tráiler" field next to the poster, a blank value is left out of the request, and a value that is not an
+  absolute http or https address of at most 2048 characters shows a message and is not sent. The movie detail shows a
+  "Ver tráiler" link that opens in a new tab, without an embedded player, and the poster as an image with an alternative
+  text; only http and https addresses reach the template.
+
 ### Fixed
 
 - The branching section of the README draws the promotion branches as `qa-promote/...` and explains why they are not `qa/...` (ADR-021).
@@ -46,8 +54,8 @@ and is tagged `v<version>` once it is merged.
 - The movies screen of the administration reads and writes the real Catalog API (`csp-catalog-portal#82`, second
   delivery): it lists every movie with its status, creates a published movie and archives a movie (the service keeps it),
   with an `Idempotency-Key` that a retry of the same write reuses, a loading state, and the message of the API when it
-  refuses. The trailer field is replaced by an optional poster, as the contract has no trailer, and the delete action
-  is now Archive. The rooms, showtimes and billboard screens are still synthetic.
+  refuses. The trailer field was replaced by an optional poster while the contract had no trailer (the trailer link came back
+  with `catalog-service.yaml` 1.11.0, see Unreleased), and the delete action is now Archive. The rooms, showtimes and billboard screens are still synthetic.
 - `CatalogAdminApiService`: typed calls to the administration routes of the Catalog service (`/movies`, `/rooms` and
   `/showtimes` of `catalog-service.yaml` 1.10.0: list, get, create, update with PATCH and archive or cancel with DELETE),
   with the `Idempotency-Key` that each write needs and `newIdempotencyKey()`. Nothing uses it yet: the administration
