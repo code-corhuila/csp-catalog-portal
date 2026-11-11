@@ -3,12 +3,13 @@ import { Observable, catchError, map, of, tap } from 'rxjs';
 import { ApiError, asApiError } from '../../../shell-contract';
 import { CatalogAdminApiService, RetryKeys } from '../../data/catalog-admin-api.service';
 import { CreateMovieRequest, MovieRecord } from '../../model/admin';
+import { httpUrlOrNull } from '../../model/web-url';
 import { AdminResult } from './admin-catalog-state.service';
 
 /** The state of a list read from the service. */
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
-/** What the administrator typed in the form; a blank poster is left out. */
+/** What the administrator typed in the form; a blank poster or trailer link is left out. */
 export interface NewMovieInput {
   title: string;
   genre: string;
@@ -16,13 +17,17 @@ export interface NewMovieInput {
   classification: string;
   synopsis: string;
   poster: string;
+  trailer: string;
 }
+
+const INVALID_TRAILER = 'El enlace del tráiler debe ser una dirección http o https de hasta 2048 caracteres.';
 
 function toRequest(input: NewMovieInput): CreateMovieRequest | null {
   const title = input.title.trim();
   const genre = input.genre.trim();
   const synopsis = input.synopsis.trim();
   const poster = input.poster.trim();
+  const trailer = input.trailer.trim();
 
   if (!title || !genre || !input.duration || input.duration < 1 || !input.classification || !synopsis) {
     return null;
@@ -35,6 +40,7 @@ function toRequest(input: NewMovieInput): CreateMovieRequest | null {
     genres: [genre],
     status: 'PUBLISHED',
     ...(poster ? { posterUrl: poster } : {}),
+    ...(trailer ? { trailerUrl: trailer } : {}),
   };
 }
 
@@ -74,6 +80,10 @@ export class AdminMoviesState {
   }
 
   create(input: NewMovieInput): Observable<AdminResult> {
+    if (input.trailer.trim() && httpUrlOrNull(input.trailer) === null) {
+      return of({ ok: false, message: INVALID_TRAILER });
+    }
+
     const body = toRequest(input);
     if (body === null) {
       return of({ ok: false, message: 'Completa todos los campos de la película.' });
