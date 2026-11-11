@@ -76,6 +76,7 @@ describe('AdminMoviesPageComponent', () => {
     component.draft.classification = 'TP';
     component.draft.synopsis = 'Un homenaje al cine de barrio.';
     component.draft.poster = '';
+    component.draft.trailer = '';
   };
 
   const rowsOf = (fixture: ComponentFixture<AdminMoviesPageComponent>): HTMLTableRowElement[] =>
@@ -91,7 +92,7 @@ describe('AdminMoviesPageComponent', () => {
     expect(content).toContain('Administra las películas disponibles para programar funciones.');
   });
 
-  it('renders every field of the registration form, with an optional poster instead of a trailer', () => {
+  it('renders every field of the registration form, with an optional poster and an optional trailer link', () => {
     const fixture = loaded();
 
     expect(fixture.nativeElement.querySelector('#new-movie-title')).not.toBeNull();
@@ -102,7 +103,12 @@ describe('AdminMoviesPageComponent', () => {
     const poster = fixture.nativeElement.querySelector('#new-movie-poster');
     expect(poster.getAttribute('type')).toBe('url');
     expect(poster.required).toBeFalse();
-    expect(fixture.nativeElement.querySelector('#new-movie-trailer')).toBeNull();
+    const trailer = fixture.nativeElement.querySelector('#new-movie-trailer');
+    expect(trailer.getAttribute('type')).toBe('url');
+    expect(trailer.required).toBeFalse();
+    expect(fixture.nativeElement.querySelector('label[for=new-movie-trailer]').textContent.trim()).toBe(
+      'Enlace del tráiler (opcional)',
+    );
     expect(fixture.nativeElement.querySelector('button[type=submit]').textContent.trim()).toBe('Guardar Película');
   });
 
@@ -165,6 +171,38 @@ describe('AdminMoviesPageComponent', () => {
     expect(component.draft.title).toBe('');
     expect(component.draft.duration).toBeNull();
     expect(component.draft.classification).toBe('');
+  });
+
+  it('sends the trailer link with the movie and clears it with the form', () => {
+    const fixture = loaded();
+    const component = fixture.componentInstance;
+
+    fillDraft(component);
+    component.draft.trailer = 'https://example.com/trailer';
+    component.saveMovie();
+    const request = http.expectOne(MOVIES);
+    expect(request.request.body.trailerUrl).toBe('https://example.com/trailer');
+    request.flush(
+      { id: '0b1f6f0e-0000-4000-8000-00000000000d', title: 'Cinema Paradiso', durationMinutes: 124, classification: 'TP', genres: ['Suspenso'], status: 'PUBLISHED', trailerUrl: 'https://example.com/trailer' },
+      { status: 201, statusText: 'Created' },
+    );
+    sync(fixture);
+
+    expect(component.draft.trailer).toBe('');
+  });
+
+  it('shows a message and sends nothing when the trailer is not an http or https address', () => {
+    const fixture = loaded();
+    const component = fixture.componentInstance;
+
+    fillDraft(component);
+    component.draft.trailer = 'javascript:alert(1)';
+    component.saveMovie();
+    sync(fixture);
+
+    http.expectNone(MOVIES);
+    expect(toasts()).toContain('El enlace del tráiler debe ser una dirección http o https de hasta 2048 caracteres.');
+    expect(component.draft.trailer).toBe('javascript:alert(1)');
   });
 
   it('rejects an incomplete movie without calling the API and keeps the list untouched', () => {

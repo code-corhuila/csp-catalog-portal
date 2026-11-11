@@ -113,6 +113,19 @@ const STATUS_LABELS: Record<string, string> = {
               />
             </div>
 
+            <div class="form-group">
+              <label class="form-label" for="new-movie-trailer">Enlace del tráiler (opcional)</label>
+              <input
+                type="url"
+                id="new-movie-trailer"
+                class="form-control"
+                name="trailer"
+                placeholder="https://..."
+                maxlength="2048"
+                [(ngModel)]="draft.trailer"
+              />
+            </div>
+
             <button type="submit" class="btn btn-primary btn-full">Guardar Película</button>
           </form>
         </section>
@@ -195,6 +208,7 @@ export class AdminMoviesPageComponent implements OnInit {
     classification: '',
     synopsis: '',
     poster: '',
+    trailer: '',
   };
 
   ngOnInit(): void {
@@ -244,5 +258,6 @@ export class AdminMoviesPageComponent implements OnInit {
     this.draft.classification = '';
     this.draft.synopsis = '';
     this.draft.poster = '';
+    this.draft.trailer = '';
   }
 }

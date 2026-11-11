@@ -15,6 +15,7 @@ const MOVIE: BillboardMovie = {
   genres: ['Drama', 'Comedia'],
   classification: 'PG-13',
   posterUrl: 'https://example.com/poster.png',
+  trailerUrl: 'https://example.com/trailer',
   releaseDate: '2026-12-01',
 };
 
@@ -92,13 +93,43 @@ describe('MovieDetailPageComponent', () => {
       expect(links(fixture)).toEqual(['/booking/showtime/s-1', '/booking/showtime/s-2']);
     });
 
-    it('shows the poster as the banner and no trailer or rating, which the API does not have', () => {
+    it('shows the poster with an alternative text and no rating, which the API does not have', () => {
       const fixture = open(of(showtimesOf(['s-1'])));
 
-      const banner = fixture.nativeElement.querySelector('.banner') as HTMLElement;
-      expect(banner.style.backgroundImage).toContain('https://example.com/poster.png');
-      expect(fixture.nativeElement.querySelector('.trailer-btn')).toBeNull();
+      const poster = fixture.nativeElement.querySelector('img.poster') as HTMLImageElement;
+      expect(poster.getAttribute('src')).toBe('https://example.com/poster.png');
+      expect(poster.getAttribute('alt')).toBe('Póster de Real Movie');
       expect(text(fixture)).not.toContain('Rating');
+    });
+
+    it('shows no poster image when the movie has none, or when its address is not http or https', () => {
+      for (const posterUrl of [undefined, 'javascript:alert(1)']) {
+        const fixture = open(of(showtimesOf(['s-1'], { ...MOVIE, posterUrl })));
+
+        expect(fixture.nativeElement.querySelector('img')).toBeNull();
+        TestBed.resetTestingModule();
+      }
+    });
+
+    it('links the trailer in a new tab, without an embedded player', () => {
+      const fixture = open(of(showtimesOf(['s-1'])));
+
+      const trailer = fixture.nativeElement.querySelector('a.trailer-link') as HTMLAnchorElement;
+      expect(trailer.textContent?.trim()).toBe('Ver tráiler');
+      expect(trailer.getAttribute('href')).toBe('https://example.com/trailer');
+      expect(trailer.getAttribute('target')).toBe('_blank');
+      expect(trailer.getAttribute('rel')).toBe('noopener noreferrer');
+      expect(fixture.nativeElement.querySelector('iframe, video, embed, object')).toBeNull();
+    });
+
+    it('shows no trailer link when the movie has none, or when its address is not http or https', () => {
+      for (const trailerUrl of [undefined, 'javascript:alert(1)']) {
+        const fixture = open(of(showtimesOf(['s-1'], { ...MOVIE, trailerUrl })));
+
+        expect(fixture.nativeElement.querySelector('.trailer-link')).toBeNull();
+        expect(text(fixture)).not.toContain('Ver tráiler');
+        TestBed.resetTestingModule();
+      }
     });
 
     it('says that it is loading until the API answers', () => {
@@ -117,6 +148,14 @@ describe('MovieDetailPageComponent', () => {
   });
 
   describe('the movie that the billboard passed', () => {
+    it('keeps its trailer link while the showtimes load', () => {
+      const fixture = open(new Subject<Page<BillboardItem>>(), MOVIE);
+
+      expect(fixture.nativeElement.querySelector('a.trailer-link')?.getAttribute('href')).toBe(
+        'https://example.com/trailer',
+      );
+    });
+
     it('shows it at once, before the showtimes arrive, and says that they are loading', () => {
       const pending = new Subject<Page<BillboardItem>>();
       const fixture = open(pending, MOVIE);

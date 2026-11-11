@@ -1,10 +1,11 @@
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiError, asApiError } from '../../shell-contract';
 import { CatalogApiService } from '../data/catalog-api.service';
 import { BillboardMovie, BillboardShowtime } from '../model/billboard';
+import { httpUrlOrNull } from '../model/web-url';
 
 @Component({
   selector: 'app-movie-detail-page',
@@ -34,10 +35,9 @@ import { BillboardMovie, BillboardShowtime } from '../model/billboard';
               <div class="inner-content">
                 <a class="back-link" routerLink="../">← Volver a la cartelera</a>
 
-                <div
-                  class="banner"
-                  [style.background-image]="currentMovie.posterUrl ? 'url(' + currentMovie.posterUrl + ')' : ''"
-                ></div>
+                @if (posterSrc(); as poster) {
+                  <img class="poster" [src]="poster" [alt]="'Póster de ' + currentMovie.title" />
+                }
 
                 <div class="detail-content">
                   <p class="eyebrow">{{ eyebrow(currentMovie) }}</p>
@@ -46,6 +46,10 @@ import { BillboardMovie, BillboardShowtime } from '../model/billboard';
                   <p class="description">
                     {{ currentMovie.synopsis || 'Disfruta de esta película seleccionada en la cartelera de CineSync. Elige tu función disponible y reserva tus asientos.' }}
                   </p>
+
+                  @if (trailerHref(); as trailer) {
+                    <a class="trailer-link" [href]="trailer" target="_blank" rel="noopener noreferrer">Ver tráiler</a>
+                  }
 
                   <h3>Horarios Disponibles:</h3>
                   @switch (showtimesStatus()) {
@@ -106,19 +110,18 @@ import { BillboardMovie, BillboardShowtime } from '../model/billboard';
     .back-link { color: #38BDF8; display: inline-block; font-weight: 700; margin-bottom: 24px; text-decoration: none; }
     .back-link:hover { text-decoration: underline; }
 
-    .banner {
+    .poster {
+      display: block;
       width: 100%;
       height: 320px;
-      background-size: cover;
-      background-position: center;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      object-fit: cover;
+      object-position: center;
       border-radius: 12px;
-      overflow: hidden;
       border: 1px solid rgba(255, 255, 255, .08);
     }
+
+    .trailer-link { color: #38BDF8; display: inline-block; font-weight: 700; margin-top: 16px; text-decoration: none; }
+    .trailer-link:hover { text-decoration: underline; }
 
     .detail-content { padding-top: 28px; }
     .status-message, .showtime-note { color: #94A3B8; font-size: 0.9rem; }
@@ -145,6 +148,9 @@ export class MovieDetailPageComponent implements OnInit {
   readonly status = signal<'loading' | 'ready' | 'unavailable' | 'error'>('loading');
   readonly showtimesStatus = signal<'loading' | 'ready' | 'failed'>('loading');
   readonly error = signal<ApiError | null>(null);
+  /** Only an http or https address reaches the template, so a stored value cannot become a script link. */
+  readonly posterSrc = computed(() => httpUrlOrNull(this.movie()?.posterUrl));
+  readonly trailerHref = computed(() => httpUrlOrNull(this.movie()?.trailerUrl));
 
   constructor() {
     // The billboard passes the movie it already has, so the page can show it before the showtimes arrive.
