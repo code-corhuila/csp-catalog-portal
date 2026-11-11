@@ -7,6 +7,7 @@ export interface Movie {
   genres?: string[];
   releaseDate?: string;
   posterUrl?: string;
+  trailerUrl?: string;
   cast?: string[];
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   rating?: number;

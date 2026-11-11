@@ -108,7 +108,7 @@ and are exposed to the shell as a **second entry point**, `./admin-routes`, expo
 | Address | Page | Source of the design |
 |---|---|---|
 | `/admin/billboard` | `AdminBillboardPageComponent` — schedule a showtime of the real API (auto end time, price in Colombian pesos, room conflict alert from the service) and list/cancel the scheduled ones | mockup § CARTELERA |
-| `/admin/movies` | `AdminMoviesPageComponent` — list, create and archive the movies of the real Catalog API (title, genre, duration, classification, synopsis, optional poster) | mockup § PELÍCULAS |
+| `/admin/movies` | `AdminMoviesPageComponent` — list, create and archive the movies of the real Catalog API (title, genre, duration, classification, synopsis, optional poster, optional trailer link) | mockup § PELÍCULAS |
 | `/admin/rooms` | `AdminRoomsPageComponent` — list, create and archive the rooms of the real Catalog API, with their seat capacity | mockup § SALAS |
 | `/admin/reports` | `AdminReportsPageComponent` — headline metrics, room occupancy and showtime summary (mock only) | mockup § REPORTES |
 
